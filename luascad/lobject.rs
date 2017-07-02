@@ -114,13 +114,13 @@ impl LObject {
                     LObject { o: Twister::new(o.into_object(), height) as Box<Object> }
                 }));
     }
-    fn translate(&mut self, x: Float, y: Float, z: Float) {
-        self.o = self.o.translate(Vector::new(x, y, z));
+    fn translate(&mut self, x: Float, y: Float, z: Float) -> LObject {
+        LObject { o: self.o.clone().translate(Vector::new(x, y, z)) }
     }
-    fn rotate(&mut self, x: Float, y: Float, z: Float) {
-        self.o = self.o.rotate(Vector::new(x, y, z));
+    fn rotate(&mut self, x: Float, y: Float, z: Float) -> LObject  {
+        LObject { o: self.o.clone().rotate(Vector::new(x, y, z))}
     }
-    fn scale(&mut self, x: Float, y: Float, z: Float) {
-        self.o = self.o.scale(Vector::new(x, y, z));
+    fn scale(&mut self, x: Float, y: Float, z: Float) -> LObject  {
+        LObject { o: self.o.clone().scale(Vector::new(x, y, z))}
     }
 }
