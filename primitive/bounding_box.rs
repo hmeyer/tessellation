@@ -1,5 +1,5 @@
-use truescad_types::{Float, INFINITY, Transform, NEG_INFINITY, Point, Vector};
 use alga::linear::Transformation;
+use truescad_types::{Float, INFINITY, Transform, NEG_INFINITY, Point, Vector};
 
 lazy_static! {
     pub static ref INFINITY_BOX: BoundingBox = BoundingBox {
@@ -44,10 +44,7 @@ impl BoundingBox {
         INFINITY_BOX.clone()
     }
     pub fn new(min: Point, max: Point) -> BoundingBox {
-        BoundingBox {
-            min: min,
-            max: max,
-        }
+        BoundingBox { min: min, max: max }
     }
     pub fn union(&self, other: &BoundingBox) -> BoundingBox {
         BoundingBox {
@@ -81,6 +78,12 @@ impl BoundingBox {
         BoundingBox {
             min: Point::new(self.min.x - d, self.min.y - d, self.min.z - d),
             max: Point::new(self.max.x + d, self.max.y + d, self.max.z + d),
+        }
+    }
+    pub fn insert(&self, o: Point) -> BoundingBox {
+        BoundingBox {
+            min: point_min(&[self.min, o]),
+            max: point_max(&[self.max, o]),
         }
     }
     pub fn dim(&self) -> Vector {

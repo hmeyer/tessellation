@@ -62,7 +62,8 @@ fn sphere_normals(b: &mut Bencher) {
 }
 
 fn create_cube() -> Box<Object> {
-    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap() as Box<Object>
+    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap() as
+    Box<Object>
 }
 
 fn cube(b: &mut Bencher) {
@@ -75,7 +76,8 @@ fn cube_normals(b: &mut Bencher) {
 }
 
 fn create_hollow_cube() -> Box<Object> {
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap() as Box<Object>
+    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap() as
+    Box<Object>
 }
 
 fn hollow_cube(b: &mut Bencher) {
@@ -97,5 +99,9 @@ fn twisted_cube_normals(b: &mut Bencher) {
 }
 
 benchmark_group!(bench_values, sphere, cube, hollow_cube, twisted_cube);
-benchmark_group!(bench_normals, sphere_normals, cube_normals, hollow_cube_normals, twisted_cube_normals);
+benchmark_group!(bench_normals,
+                 sphere_normals,
+                 cube_normals,
+                 hollow_cube_normals,
+                 twisted_cube_normals);
 benchmark_main!(bench_values, bench_normals);

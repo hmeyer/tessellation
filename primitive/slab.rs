@@ -12,10 +12,10 @@ impl SlabX {
     pub fn new(thickness: Float) -> Box<SlabX> {
         let d = thickness * 0.5;
         Box::new(SlabX {
-            distance_from_zero: d,
-            bbox: BoundingBox::new(Point::new(-d, NEG_INFINITY, NEG_INFINITY),
-                                   Point::new(d, INFINITY, INFINITY)),
-        })
+                     distance_from_zero: d,
+                     bbox: BoundingBox::new(Point::new(-d, NEG_INFINITY, NEG_INFINITY),
+                                            Point::new(d, INFINITY, INFINITY)),
+                 })
     }
 }
 
@@ -45,10 +45,10 @@ impl SlabY {
     pub fn new(thickness: Float) -> Box<SlabY> {
         let d = thickness * 0.5;
         Box::new(SlabY {
-            distance_from_zero: d,
-            bbox: BoundingBox::new(Point::new(NEG_INFINITY, -d, NEG_INFINITY),
-                                   Point::new(INFINITY, d, INFINITY)),
-        })
+                     distance_from_zero: d,
+                     bbox: BoundingBox::new(Point::new(NEG_INFINITY, -d, NEG_INFINITY),
+                                            Point::new(INFINITY, d, INFINITY)),
+                 })
     }
 }
 
@@ -78,10 +78,10 @@ impl SlabZ {
     pub fn new(thickness: Float) -> Box<SlabZ> {
         let d = thickness * 0.5;
         Box::new(SlabZ {
-            distance_from_zero: d,
-            bbox: BoundingBox::new(Point::new(NEG_INFINITY, NEG_INFINITY, -d),
-                                   Point::new(INFINITY, INFINITY, d)),
-        })
+                     distance_from_zero: d,
+                     bbox: BoundingBox::new(Point::new(NEG_INFINITY, NEG_INFINITY, -d),
+                                            Point::new(INFINITY, INFINITY, d)),
+                 })
     }
 }
 

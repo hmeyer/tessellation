@@ -21,16 +21,16 @@ impl Union {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                            .fold(NEG_INFINITY_BOX.clone(),
-                                  |union_box, x| union_box.union(x.bbox()))
-                            .dilate(r * 0.2); // dilate by some factor of r
+                    .fold(NEG_INFINITY_BOX.clone(),
+                          |union_box, x| union_box.union(x.bbox()))
+                    .dilate(r * 0.2); // dilate by some factor of r
                 Some(Box::new(Union {
-                    objs: v,
-                    r: r,
-                    bbox: bbox,
-                    exact_range: r * R_MULTIPLIER,
-                    fade_range: FADE_RANGE,
-                }))
+                                  objs: v,
+                                  r: r,
+                                  bbox: bbox,
+                                  exact_range: r * R_MULTIPLIER,
+                                  fade_range: FADE_RANGE,
+                              }))
             }
         }
     }
@@ -63,18 +63,18 @@ impl Object for Union {
     fn normal(&self, p: Point) -> Vector {
         // Find the two smallest values with their indices.
         let (v0, v1) = self.objs
-                           .iter()
-                           .enumerate()
-                           .fold(((0, INFINITY), (0, INFINITY)), |(v0, v1), x| {
-                               let t = x.1.approx_value(p, ALWAYS_PRECISE);
-                               if t < v0.1 {
-                                   ((x.0, t), v0)
-                               } else if t < v1.1 {
-                                   (v0, (x.0, t))
-                               } else {
-                                   (v0, v1)
-                               }
-                           });
+            .iter()
+            .enumerate()
+            .fold(((0, INFINITY), (0, INFINITY)), |(v0, v1), x| {
+                let t = x.1.approx_value(p, ALWAYS_PRECISE);
+                if t < v0.1 {
+                    ((x.0, t), v0)
+                } else if t < v1.1 {
+                    (v0, (x.0, t))
+                } else {
+                    (v0, v1)
+                }
+            });
         match (v0.1 - v1.1).abs() {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (1. - self.fade_range)) => {
@@ -107,15 +107,16 @@ impl Intersection {
             0 => None,
             1 => Some(v.pop().unwrap()),
             _ => {
-                let bbox = v.iter().fold(INFINITY_BOX.clone(),
-                                         |union_box, x| union_box.intersection(x.bbox()));
+                let bbox = v.iter()
+                    .fold(INFINITY_BOX.clone(),
+                          |union_box, x| union_box.intersection(x.bbox()));
                 Some(Box::new(Intersection {
-                    objs: v,
-                    r: r,
-                    bbox: bbox,
-                    exact_range: r * R_MULTIPLIER,
-                    fade_range: FADE_RANGE,
-                }))
+                                  objs: v,
+                                  r: r,
+                                  bbox: bbox,
+                                  exact_range: r * R_MULTIPLIER,
+                                  fade_range: FADE_RANGE,
+                              }))
             }
         }
     }
@@ -160,18 +161,18 @@ impl Object for Intersection {
     fn normal(&self, p: Point) -> Vector {
         // Find the two largest values with their indices.
         let (v0, v1) = self.objs
-                           .iter()
-                           .enumerate()
-                           .fold(((0, NEG_INFINITY), (0, NEG_INFINITY)), |(v0, v1), x| {
-                               let t = x.1.approx_value(p, ALWAYS_PRECISE);
-                               if t > v0.1 {
-                                   ((x.0, t), v0)
-                               } else if t > v1.1 {
-                                   (v0, (x.0, t))
-                               } else {
-                                   (v0, v1)
-                               }
-                           });
+            .iter()
+            .enumerate()
+            .fold(((0, NEG_INFINITY), (0, NEG_INFINITY)), |(v0, v1), x| {
+                let t = x.1.approx_value(p, ALWAYS_PRECISE);
+                if t > v0.1 {
+                    ((x.0, t), v0)
+                } else if t > v1.1 {
+                    (v0, (x.0, t))
+                } else {
+                    (v0, v1)
+                }
+            });
         match (v0.1 - v1.1).abs() {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (1. - self.fade_range)) => {
@@ -197,8 +198,8 @@ pub struct Negation {
 impl Negation {
     pub fn from_vec(v: Vec<Box<Object>>) -> Vec<Box<Object>> {
         v.iter()
-         .map(|o| Box::new(Negation { object: o.clone() }) as Box<Object>)
-         .collect()
+            .map(|o| Box::new(Negation { object: o.clone() }) as Box<Object>)
+            .collect()
     }
 }
 
@@ -213,8 +214,8 @@ impl Object for Negation {
 
 fn rvmin(v: &[Float], r: Float, exact_range: Float) -> Float {
     let mut close_min = false;
-    let minimum = v.iter().fold(INFINITY, |min, x| {
-        if x < &min {
+    let minimum = v.iter()
+        .fold(INFINITY, |min, x| if x < &min {
             if (min - x) < exact_range {
                 close_min = true;
             } else {
@@ -226,22 +227,23 @@ fn rvmin(v: &[Float], r: Float, exact_range: Float) -> Float {
                 close_min = true;
             }
             min
-        }
-    });
+        });
     if !close_min {
         return minimum;
     }
     let min_plus_r = minimum + r;
     let r4 = r / 4.;
     // Inpired by http://iquilezles.org/www/articles/smin/smin.htm
-    let exp_sum = v.iter().filter(|&x| x < &min_plus_r).fold(0., |sum, x| sum + (-x / r4).exp());
+    let exp_sum = v.iter()
+        .filter(|&x| x < &min_plus_r)
+        .fold(0., |sum, x| sum + (-x / r4).exp());
     return exp_sum.ln() * -r4;
 }
 
 fn rvmax(v: &[Float], r: Float, exact_range: Float) -> Float {
     let mut close_max = false;
-    let maximum = v.iter().fold(NEG_INFINITY, |max, x| {
-        if x > &max {
+    let maximum = v.iter()
+        .fold(NEG_INFINITY, |max, x| if x > &max {
             if (x - max) < exact_range {
                 close_max = true;
             } else {
@@ -253,13 +255,14 @@ fn rvmax(v: &[Float], r: Float, exact_range: Float) -> Float {
                 close_max = true;
             }
             max
-        }
-    });
+        });
     if !close_max {
         return maximum;
     }
     let max_minus_r = maximum - r;
     let r4 = r / 4.;
-    let exp_sum = v.iter().filter(|&x| x > &max_minus_r).fold(0., |sum, x| sum + (x / r4).exp());
+    let exp_sum = v.iter()
+        .filter(|&x| x > &max_minus_r)
+        .fold(0., |sum, x| sum + (x / r4).exp());
     return exp_sum.ln() * r4;
 }

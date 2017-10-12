@@ -1,7 +1,7 @@
 use {Object, PrimitiveParameters};
+use alga::linear::{Similarity, Transformation};
 use bounding_box::BoundingBox;
 use truescad_types::{Float, PI, Point, Vector};
-use alga::linear::{Similarity, Transformation};
 
 #[derive(Clone, Debug)]
 pub struct Twister {
@@ -15,7 +15,8 @@ impl Object for Twister {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
         let approx = self.bbox.value(p);
         if approx <= slack {
-            self.object.approx_value(self.twist_point(p), slack / self.value_scaler) *
+            self.object
+                .approx_value(self.twist_point(p), slack / self.value_scaler) *
             self.value_scaler
         } else {
             approx
@@ -48,16 +49,16 @@ impl Twister {
         let bbox = BoundingBox::new(Point::new(-r, -r, o.bbox().min.z),
                                     Point::new(r, r, o.bbox().max.z));
         Box::new(Twister {
-            object: o,
-            height_scaler: PI * 2. / h,
-            value_scaler: scaler,
-            bbox: bbox,
-        })
+                     object: o,
+                     height_scaler: PI * 2. / h,
+                     value_scaler: scaler,
+                     bbox: bbox,
+                 })
     }
     fn twist_point(&self, p: Point) -> Point {
         let p2 = ::na::Point2::new(p.x, p.y);
         let angle = p.z * self.height_scaler;
-        type Rota = ::na::Rotation<Float,::na::U2>;
+        type Rota = ::na::Rotation<Float, ::na::U2>;
         let trans = Rota::new(angle);
         let rp2 = trans.transform_point(&p2);
         Point::new(rp2.x, rp2.y, p.z)

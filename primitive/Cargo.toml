@@ -1,6 +1,6 @@
 [package]
 name = "truescad_primitive"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -9,8 +9,10 @@ path = "lib.rs"
 
 [dependencies]
 nalgebra = "0.11"
+approx = "0.1.1"
 alga = "0.5"
 lazy_static = "0.2.8"
+stl_io = "0.3.4"
 truescad_types = { path = "../types", version = "0.2.*" }
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 use Object;
-use truescad_types::{Float, Point, Vector};
 use bounding_box::BoundingBox;
+use truescad_types::{Float, Point, Vector};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
@@ -11,9 +11,9 @@ pub struct Sphere {
 impl Sphere {
     pub fn new(r: Float) -> Box<Sphere> {
         Box::new(Sphere {
-            radius: r,
-            bbox: BoundingBox::new(Point::new(-r, -r, -r), Point::new(r, r, r)),
-        })
+                     radius: r,
+                     bbox: BoundingBox::new(Point::new(-r, -r, -r), Point::new(r, r, r)),
+                 })
 
     }
 }

@@ -13,9 +13,10 @@ pub struct Cylinder {
 impl Cylinder {
     pub fn new(r: Float) -> Box<Cylinder> {
         Box::new(Cylinder {
-            radius: r,
-            bbox: BoundingBox::new(Point::new(-r, -r, NEG_INFINITY), Point::new(r, r, INFINITY)),
-        })
+                     radius: r,
+                     bbox: BoundingBox::new(Point::new(-r, -r, NEG_INFINITY),
+                                            Point::new(r, r, INFINITY)),
+                 })
     }
 }
 
@@ -51,12 +52,12 @@ pub struct Cone {
 impl Cone {
     pub fn new(slope: Float, offset: Float) -> Box<Cone> {
         Box::new(Cone {
-            slope: slope,
-            distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
-            offset: offset,
-            normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
-            bbox: INFINITY_BOX.clone(),
-        })
+                     slope: slope,
+                     distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
+                     offset: offset,
+                     normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
+                     bbox: INFINITY_BOX.clone(),
+                 })
     }
 }
 

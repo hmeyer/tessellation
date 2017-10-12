@@ -1,7 +1,7 @@
 use {Object, PrimitiveParameters};
+use alga::linear::Transformation;
 use bounding_box::BoundingBox;
 use truescad_types::{Float, Transform, Point, Vector};
-use alga::linear::Transformation;
 
 #[derive(Clone, Debug)]
 pub struct AffineTransformer {
@@ -16,7 +16,8 @@ impl Object for AffineTransformer {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
         let approx = self.bbox.value(p);
         if approx <= slack {
-            self.object.approx_value(self.transform.transform_point(&p), slack / self.scale_min) *
+            self.object
+                .approx_value(self.transform.transform_point(&p), slack / self.scale_min) *
             self.scale_min
         } else {
             approx
@@ -30,9 +31,7 @@ impl Object for AffineTransformer {
     }
     fn normal(&self, p: Point) -> Vector {
         self.transposed
-            .transform_vector(&self.object
-                                  .normal(self.transform
-                                              .transform_point(&p)))
+            .transform_vector(&self.object.normal(self.transform.transform_point(&p)))
             .normalize()
     }
     fn translate(&self, v: Vector) -> Box<Object> {
@@ -45,7 +44,8 @@ impl Object for AffineTransformer {
         AffineTransformer::new_with_scaler(self.object.clone(), new_trans, self.scale_min)
     }
     fn scale(&self, s: Vector) -> Box<Object> {
-        let new_trans = self.transform.append_nonuniform_scaling(&Vector::new(1. / s.x, 1. / s.y, 1. / s.z));
+        let new_trans = self.transform
+            .append_nonuniform_scaling(&Vector::new(1. / s.x, 1. / s.y, 1. / s.z));
         AffineTransformer::new_with_scaler(self.object.clone(),
                                            new_trans,
                                            self.scale_min * s.x.min(s.y.min(s.z)))
@@ -72,12 +72,12 @@ impl AffineTransformer {
             Some(t_inv) => {
                 let bbox = o.bbox().transform(&t_inv);
                 Box::new(AffineTransformer {
-                    object: o,
-                    transform: t,
-                    transposed: transposed,
-                    scale_min: scale_min,
-                    bbox: bbox,
-                })
+                             object: o,
+                             transform: t,
+                             transposed: transposed,
+                             scale_min: scale_min,
+                             bbox: bbox,
+                         })
             }
         }
     }

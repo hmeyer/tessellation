@@ -1,8 +1,11 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;
+#[macro_use]
+extern crate approx;
 extern crate alga;
 extern crate truescad_types;
+extern crate stl_io;
 use std::fmt::Debug;
 pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
 
@@ -29,6 +32,9 @@ pub use self::cylinder::{Cone, Cylinder};
 
 mod slab;
 pub use self::slab::{SlabX, SlabY, SlabZ};
+
+mod mesh;
+pub use self::mesh::Mesh;
 
 pub struct PrimitiveParameters {
     pub fade_range: Float,
