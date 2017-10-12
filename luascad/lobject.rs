@@ -135,7 +135,10 @@ impl LObject {
                 hlua::function1(move |filename: String| {
                                     LObject {
                                         o: match Mesh::new(&filename) {
-                                            Ok(mesh) => Some(mesh as Box<Object>),
+                                            Ok(mesh) => {
+                                                console.send("Warning: Mesh support is currently horribly inefficient!".to_string()).unwrap();
+                                                Some(mesh as Box<Object>)
+                                            },
                                             Err(e) => {
                                                 console.send(format!("Could not read mesh: {:}", e)).unwrap();
                                                 None
