@@ -16,6 +16,10 @@ pub struct Mesh {
     faces: Vec<Face>,
 }
 
+/// Warning! This primitive is currently horribly inefficient.
+/// That is, for each point it iterates over all faces and finds the closest.
+/// This implementation desperately needs some performance improvements, e.g. kd-tree support or
+/// similar.
 impl Mesh {
     pub fn new(stl_filename: &str) -> ::std::io::Result<Box<Mesh>> {
         let mut file = ::std::fs::OpenOptions::new().read(true).open(stl_filename)?;
@@ -67,11 +71,6 @@ impl Mesh {
                 } else {
                     return min_and_acos;
                 }
-                // if current_and_acos.1.abs() > min_and_acos.1.abs() {
-                //     return current_and_acos;
-                // } else {
-                //     return min_and_acos;
-                // }
             });
         return value_and_acos.0 * value_and_acos.1.signum();
     }
