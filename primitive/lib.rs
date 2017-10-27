@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;
+#[cfg(not(test))]
+extern crate approx;
+#[cfg(test)]
 #[macro_use]
 extern crate approx;
 extern crate alga;
