@@ -1,6 +1,6 @@
 [package]
 name = "truescad_tessellation"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -16,7 +16,7 @@ rayon = "0.7.*"
 lazy_static = "0.2.8"
 
 truescad_types = { path = "../types", version = "0.2.*" }
-truescad_primitive = { path = "../primitive", version = "0.3.*" }
+truescad_primitive = { path = "../primitive", version = "0.4.*" }
 
 [dev-dependencies]
 approx = "0.1"

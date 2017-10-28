@@ -1,6 +1,6 @@
 [package]
 name = "truescad_primitive"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]

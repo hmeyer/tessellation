@@ -7,7 +7,6 @@ use truescad_types::{Float, Transform, Point, Vector};
 pub struct AffineTransformer {
     object: Box<Object>,
     transform: Transform,
-    transposed: Transform,
     scale_min: Float,
     bbox: BoundingBox,
 }
@@ -30,7 +29,7 @@ impl Object for AffineTransformer {
         self.object.set_parameters(p);
     }
     fn normal(&self, p: Point) -> Vector {
-        self.transposed
+        self.transform
             .transform_vector(&self.object.normal(self.transform.transform_point(&p)))
             .normalize()
     }
@@ -66,7 +65,6 @@ impl AffineTransformer {
         // 1./Vector::new(t.x.y, t.y.y, t.z.y).magnitude().min(
         // 1./Vector::new(t.x.z, t.y.z, t.z.z).magnitude()))
 
-        let transposed = t.transpose();
         match t.try_inverse() {
             None => panic!("Failed to invert {:?}", t),
             Some(t_inv) => {
@@ -74,7 +72,6 @@ impl AffineTransformer {
                 Box::new(AffineTransformer {
                              object: o,
                              transform: t,
-                             transposed: transposed,
                              scale_min: scale_min,
                              bbox: bbox,
                          })
@@ -89,5 +86,43 @@ impl AffineTransformer {
     }
     pub fn new_scale(o: Box<Object>, s: Vector) -> Box<Object> {
         AffineTransformer::identity(o).scale(s)
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct MockObject {
+        value: Float,
+        normal: Vector,
+    }
+
+    impl MockObject {
+        pub fn new(value: Float, normal: Vector) -> Box<MockObject> {
+            Box::new(MockObject {
+                         value: value,
+                         normal: normal,
+                     })
+        }
+    }
+
+    impl Object for MockObject {
+        fn approx_value(&self, _: Point, _: Float) -> Float {
+            self.value
+        }
+        fn normal(&self, _: Point) -> Vector {
+            self.normal.clone()
+        }
+    }
+
+    #[test]
+    fn translate() {
+        let mock_object = MockObject::new(1.0, Vector::new(1.0, 0.0, 0.0));
+        let translated = mock_object.translate(Vector::new(0.0001, 0.0, 0.0));
+        let p = Point::new(1.0, 0.0, 0.0);
+        assert_eq!(mock_object.normal(p), translated.normal(p));
     }
 }
