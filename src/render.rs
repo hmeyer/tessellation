@@ -116,7 +116,7 @@ impl Renderer {
             rows.par_iter_mut()
                 .for_each(|y_and_buf| {
                     let y = y_and_buf.0 as i32;
-                    let mut row_buf = &mut y_and_buf.1;
+                    let row_buf = &mut y_and_buf.1;
                     let dir_row = dir_front + dir_tb * ((y - h2) as Float * scale);
                     let mut row_ray = ray;
                     let mut index: usize = 0;

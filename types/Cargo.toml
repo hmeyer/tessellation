@@ -1,6 +1,6 @@
 [package]
 name = "truescad_types"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -8,5 +8,5 @@ name = "truescad_types"
 path = "lib.rs"
 
 [dependencies]
-nalgebra = "0.11"
+nalgebra = "0.14"
 lazy_static = "0.2.8"
