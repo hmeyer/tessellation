@@ -10,7 +10,7 @@ set -e
 cargo build
 cargo test
 cargo bench
-cd foobar
+
 cd luascad; cargo build; cargo test; cargo bench; cd ..
 cd primitive; cargo build; cargo test; cargo bench; cd ..
 cd tessellation; cargo build; cargo test; cargo bench; cd ..
