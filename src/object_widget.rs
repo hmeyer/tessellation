@@ -35,11 +35,11 @@ impl ObjectWidget {
                 });
         }
         xw.drawing_area
-            .add_events(::gdk::BUTTON1_MASK.bits() as i32);
+            .add_events(::gdk::ModifierType::BUTTON1_MASK.bits() as i32);
         xw.drawing_area
-            .add_events(::gdk::BUTTON2_MASK.bits() as i32);
+            .add_events(::gdk::ModifierType::BUTTON2_MASK.bits() as i32);
         xw.drawing_area
-            .add_events(::gdk::BUTTON3_MASK.bits() as i32);
+            .add_events(::gdk::ModifierType::BUTTON3_MASK.bits() as i32);
         xw.drawing_area.add_events(1 << 4);
 
         {
@@ -56,11 +56,11 @@ impl ObjectWidget {
                                     ((ny - oy) / da_alloc.height as f64) as Float);
                     mouse_pos_clone.set(em.get_position());
                     match em.get_state() {
-                        x if ::gdk::BUTTON1_MASK.intersects(x) => {
+                        x if ::gdk::ModifierType::BUTTON1_MASK.intersects(x) => {
                             renderer_clone.borrow_mut().rotate_from_screen(dx, dy);
                             da.queue_draw();
                         }
-                        x if ::gdk::BUTTON3_MASK.intersects(x) => {
+                        x if ::gdk::ModifierType::BUTTON3_MASK.intersects(x) => {
                             renderer_clone.borrow_mut().translate_from_screen(dx, dy);
                             da.queue_draw();
                         }
@@ -89,5 +89,5 @@ fn draw_on_image(renderer: Rc<RefCell<render::Renderer>>, width: i32, height: i3
     renderer.borrow().draw_on_buf(&mut *buf, width, height);
     let image2 =
         ImageSurface::create_for_data(buf, move |_| {}, Format::Rgb24, width, height, width * 4);
-    return image2;
+    return image2.unwrap();
 }

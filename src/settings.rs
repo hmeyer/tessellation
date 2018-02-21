@@ -1,4 +1,4 @@
-use gtk::{BoxExt, ContainerExt, DialogExt, SpinButton, SpinButtonSignals, WidgetExt};
+use gtk::{BoxExt, ContainerExt, DialogExt, SpinButton, SpinButtonExt, SpinButtonSignals, WidgetExt};
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
@@ -12,7 +12,6 @@ macro_rules! add_setting {
         let h_box = ::gtk::Box::new(::gtk::Orientation::Horizontal, 0);
         let label = ::gtk::Label::new_with_mnemonic(Some(stringify!($field)));
         let setting = SpinButton::new_with_range(0.0001, 1000., 0.01);
-        setting.set_digits(3);
         setting.set_value($data.borrow().$field);
         setting.connect_value_changed(move |f: &SpinButton| {
             data_clone.borrow_mut().$field = f.get_value();
@@ -29,7 +28,7 @@ pub fn show_settings_dialog<T: ::gtk::IsA<::gtk::Window>>(parent: Option<&T>) {
 
     let dialog = ::gtk::Dialog::new_with_buttons(Some("Settings"),
                                                  parent,
-                                                 ::gtk::DIALOG_MODAL,
+                                                 ::gtk::DialogFlags::MODAL,
                                                  &[("OK", ::gtk::ResponseType::Ok.into()),
                                                    ("Cancel", ::gtk::ResponseType::Cancel.into())]);
     // TODO: use rustc_serialize::Encodable to generate settings items
