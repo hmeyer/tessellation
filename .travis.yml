@@ -1,53 +1,8 @@
-dist: trusty
 sudo: required
-
-language: rust
-rust:
-  - stable
-  - beta
-  - nightly
-
-matrix:
-  allow_failures:
-    - rust: beta
-
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -qq libgtk-3-dev libglfw3 libgl1-mesa-dev
-notifications:
-  email:
-    on_success: change
-    on_failure: always
-
-before_script: |
-  PKGNAME="truescad" # must match with cargo.toml
-  LOCAL="~/.local" # install here to avoid `sudo`
-  export PATH=$LOCAL/bin:$PATH
-
+services:
+  - docker
+language: native
+install:
+  - lsb_release -a
 script:
-  - cargo build
-  - cargo test
-  - cargo bench
-  - cd stl_io; cargo build; cargo test; cd ..
-  - cd luascad; cargo build; cargo test; cargo bench; cd ..
-  - cd primitive; cargo build; cargo test; cargo bench; cd ..
-  - cd tessellation; cargo build; cargo test; cargo bench; cd ..
-
-# addons:
-#   apt:
-#     packages:
-#     - libcurl4-openssl-dev
-#     - libelf-dev
-#     - libdw-dev
-#     - libbfd-dev # required for `--verify`
-#     - libiberty-dev
-#
-# after_success: |
-#   wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-#   tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build &&
-#   cmake -DCMAKE_INSTALL_PREFIX:PATH=$LOCAL .. && make &&
-#   make install && cd ../.. &&
-#   kcov --verify \
-#        --coveralls-id=$TRAVIS_JOB_ID \
-#        --exclude-pattern=/.cargo \
-#        target/kcov target/debug/$PKGNAME-*
+  - docker run --rm -it -v "$(pwd)":/usr/src/myapp -w /usr/src/myapp rust:stretch ./ci.sh
