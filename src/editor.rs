@@ -26,23 +26,23 @@ impl Editor {
         let mut buffer = None;
         let mut src_view = ::sourceview::View::new();
         if let Some(lang_mgr) = ::sourceview::LanguageManager::get_default() {
-            println!("got default lang_mgr");
-            if let Some(lua) = lang_mgr.get_language("lua") {
-                println!("got lua");
+            let lang_search_paths = lang_mgr.get_search_path();
+            let mut lang_search_paths_str: Vec<&str> = lang_search_paths.iter().map(AsRef::as_ref).collect();
+            lang_search_paths_str.push("./language-specs/");
+            lang_mgr.set_search_path(&lang_search_paths_str);
+            if let Some(lua) = lang_mgr.get_language("truescad-lua") {
                 if let Some(style_mgr) = ::sourceview::StyleSchemeManager::get_default() {
-                    println!("got style_mgr");
                     style_mgr.append_search_path("./styles/");
                     if let Some(scheme) = style_mgr.get_scheme("build") {
-                        println!("got scheme");
                         let b = ::sourceview::Buffer::new_with_language(&lua);
                         b.set_highlight_syntax(true);
                         b.set_style_scheme(&scheme);
                         src_view=::sourceview::View::new_with_buffer(&b);
                         buffer = Some(b);
-                    }
-                    }
-                }
-            }
+                    } else { println!("failed to get scheme."); }
+                } else { println!("failed to get default StyleSchemeManager."); }
+            } else { println!("failed to get lang."); }
+        } else { println!("failed to get default LanguageManager."); }
 
 
         widget.add(&src_view);

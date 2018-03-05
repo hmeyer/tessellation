@@ -871,7 +871,7 @@ dependencies = [
 
 [[package]]
 name = "truescad"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "alga 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bencher 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
