@@ -1,5 +1,6 @@
 use gtk::Inhibit;
 use gtk::traits::*;
+use sourceview::{BufferExt, LanguageManagerExt, StyleSchemeManagerExt};
 use mesh_view;
 use object_widget;
 use settings;
@@ -14,15 +15,37 @@ use truescad_tessellation::Mesh;
 #[derive(Clone)]
 pub struct Editor {
     pub widget: ::gtk::ScrolledWindow,
-    text_view: ::gtk::TextView,
+        source_view: ::sourceview::View,
+        buffer: Option<::sourceview::Buffer>,
 }
 
 
 impl Editor {
     pub fn new(xw: &object_widget::ObjectWidget, debug_buffer: &::gtk::TextBuffer) -> Editor {
         let widget = ::gtk::ScrolledWindow::new(None, None);
-        let tv = ::gtk::TextView::new();
-        widget.add(&tv);
+        let mut buffer = None;
+        let mut src_view = ::sourceview::View::new();
+        if let Some(lang_mgr) = ::sourceview::LanguageManager::get_default() {
+            println!("got default lang_mgr");
+            if let Some(lua) = lang_mgr.get_language("lua") {
+                println!("got lua");
+                if let Some(style_mgr) = ::sourceview::StyleSchemeManager::get_default() {
+                    println!("got style_mgr");
+                    style_mgr.append_search_path("./styles/");
+                    if let Some(scheme) = style_mgr.get_scheme("build") {
+                        println!("got scheme");
+                        let b = ::sourceview::Buffer::new_with_language(&lua);
+                        b.set_highlight_syntax(true);
+                        b.set_style_scheme(&scheme);
+                        src_view=::sourceview::View::new_with_buffer(&b);
+                        buffer = Some(b);
+                    }
+                    }
+                }
+            }
+
+
+        widget.add(&src_view);
         // TODO: Find out why this causes a non-draw on startup.
         // tv.set_wrap_mode(::gtk::WrapMode::WordChar);
         let renderer = xw.renderer.clone();
@@ -30,13 +53,14 @@ impl Editor {
         let debug_buffer_clone = debug_buffer.clone();
         let editor = Editor {
             widget: widget,
-            text_view: tv,
+            source_view: src_view,
+            buffer: buffer,
         };
         let editor_clone = editor.clone();
 
         editor
-            .text_view
-            .connect_key_release_event(move |_: &::gtk::TextView,
+            .source_view
+            .connect_key_release_event(move |_: &::sourceview::View,
                                              key: &::gdk::EventKey|
                                              -> Inhibit {
                 match key.get_keyval() {
@@ -57,7 +81,7 @@ impl Editor {
         editor
     }
     fn get_object(&self, msg: &mut Write) -> Option<Box<truescad_primitive::Object>> {
-        let code_buffer = self.text_view.get_buffer().unwrap();
+        let code_buffer = self.source_view.get_buffer().unwrap();
         let code_text = code_buffer
             .get_text(&code_buffer.get_start_iter(),
                       &code_buffer.get_end_iter(),
@@ -98,13 +122,13 @@ impl Editor {
                     buffer.push_str("\n");
                 }
             }
-            self.text_view.get_buffer().unwrap().set_text(&buffer);
+            self.source_view.get_buffer().unwrap().set_text(&buffer);
         } else {
             println!("could not open {:?}: {:?}", &filename, open_result);
         }
     }
     pub fn save(&self, filename: &str) {
-        save_from_textview(&self.text_view, filename);
+        save_from_sourceview(&self.source_view, filename);
     }
     pub fn tessellate(&self) -> Option<Mesh> {
         let maybe_obj = self.get_object(&mut ::std::io::stdout());
@@ -122,10 +146,10 @@ impl Editor {
     }
 }
 
-fn save_from_textview(text_view: &::gtk::TextView, filename: &str) {
+fn save_from_sourceview(source_view: &::sourceview::View, filename: &str) {
     let open_result = File::create(filename);
     if let Ok(f) = open_result {
-        let code_buffer = text_view.get_buffer().unwrap();
+        let code_buffer = source_view.get_buffer().unwrap();
         let code_text = code_buffer
             .get_text(&code_buffer.get_start_iter(),
                       &code_buffer.get_end_iter(),

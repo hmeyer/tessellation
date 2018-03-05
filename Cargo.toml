@@ -1,10 +1,11 @@
 [package]
 name = "truescad"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [dependencies]
 gtk = "0.3.*"
+sourceview = "0.3.*"
 gdk = "0.7.*"
 cairo-rs = "0.3.*"
 nalgebra = "0.14"

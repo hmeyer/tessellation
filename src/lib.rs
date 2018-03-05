@@ -7,6 +7,7 @@
 
 extern crate cairo;
 extern crate gtk;
+extern crate sourceview;
 extern crate gdk;
 extern crate nalgebra as na;
 extern crate alga;
