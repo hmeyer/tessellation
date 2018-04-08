@@ -7,7 +7,7 @@ pub struct AffineTransformer {
     object: Box<Object>,
     transform: Transform,
     scale_min: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Object for AffineTransformer {
@@ -21,7 +21,7 @@ impl Object for AffineTransformer {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn set_parameters(&mut self, p: &PrimitiveParameters) {

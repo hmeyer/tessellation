@@ -10,7 +10,7 @@ pub struct Union {
     r: Float,
     exact_range: Float, // Calculate smooth transitions over this range
     fade_range: Float,  // Fade normal over this fraction of the smoothing range
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Union {
@@ -20,7 +20,7 @@ impl Union {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(BoundingBox::neg_infinity(), |union_box, x| {
+                    .fold(BoundingBox::<Float>::neg_infinity(), |union_box, x| {
                         union_box.union(x.bbox())
                     })
                     .dilate(r * 0.2); // dilate by some factor of r
@@ -52,7 +52,7 @@ impl Object for Union {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn set_parameters(&mut self, p: &PrimitiveParameters) {
@@ -100,7 +100,7 @@ pub struct Intersection {
     r: Float,
     exact_range: Float, // Calculate smooth transitions over this range
     fade_range: Float,  // Fade normal over this fraction of the smoothing range
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Intersection {
@@ -110,7 +110,7 @@ impl Intersection {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(BoundingBox::infinity(), |intersection_box, x| {
+                    .fold(BoundingBox::<Float>::infinity(), |intersection_box, x| {
                         intersection_box.intersection(x.bbox())
                     });
                 Some(Box::new(Intersection {
@@ -152,7 +152,7 @@ impl Object for Intersection {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn set_parameters(&mut self, p: &PrimitiveParameters) {
@@ -197,7 +197,7 @@ impl Object for Intersection {
 #[derive(Clone, Debug)]
 pub struct Negation {
     object: Box<Object>,
-    infinity_bbox: BoundingBox,
+    infinity_bbox: BoundingBox<Float>,
 }
 
 impl Negation {
@@ -206,7 +206,7 @@ impl Negation {
             .map(|o| {
                 Box::new(Negation {
                     object: o.clone(),
-                    infinity_bbox: BoundingBox::infinity(),
+                    infinity_bbox: BoundingBox::<Float>::infinity(),
                 }) as Box<Object>
             })
             .collect()
@@ -220,7 +220,7 @@ impl Object for Negation {
     fn normal(&self, p: Point) -> Vector {
         self.object.normal(p) * -1.
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.infinity_bbox
     }
 }

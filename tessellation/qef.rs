@@ -18,12 +18,12 @@ pub struct Qef {
     // Scalar BT * B
     btb: Float,
     pub error: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 
 impl Qef {
-    pub fn new(planes: &[Plane], bbox: BoundingBox) -> Qef {
+    pub fn new(planes: &[Plane], bbox: BoundingBox<Float>) -> Qef {
         let mut qef = Qef {
             solution: na::Vector3::new(NAN, NAN, NAN),
             sum: na::Vector3::new(0., 0., 0.),
@@ -88,7 +88,7 @@ impl Qef {
     fn search_solution(
         &self,
         accuracy: Float,
-        bbox: &mut BoundingBox,
+        bbox: &mut BoundingBox<Float>,
         ma: &na::Matrix3<Float>,
     ) -> na::Vector3<Float> {
         // Generate bbox mid-point and error value on mid-point.
@@ -160,7 +160,7 @@ mod tests {
                     n: Vector::new(2., 3., 4.).normalize(),
                 },
             ],
-            BoundingBox::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
+            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(
@@ -187,7 +187,7 @@ mod tests {
                     n: Vector::new(1., 1., 0.).normalize(),
                 },
             ],
-            BoundingBox::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
+            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(relative_eq!(qef.solution, &na::Vector3::new(0., 0., 0.)));
@@ -210,7 +210,7 @@ mod tests {
                     n: Vector::new(0., 0., 1.),
                 },
             ],
-            BoundingBox::new(Point::new(0., 0., 0.), Point::new(1., 2., 3.)),
+            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 2., 3.)),
         );
         qef.solve();
         let expected_solution = na::Vector3::new(1., 2., 3.);

@@ -6,7 +6,7 @@ use truescad_types::{Float, Point, Vector, PI};
 pub struct Bender {
     object: Box<Object>,
     width_scaler: Float, // width_for_full_rotation / (2. * PI),
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Object for Bender {
@@ -35,7 +35,7 @@ impl Object for Bender {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn set_parameters(&mut self, p: &PrimitiveParameters) {
@@ -52,7 +52,7 @@ impl Object for Bender {
 impl Bender {
     // o: Object to be twisted, w: width (x) for one full rotation
     pub fn new(o: Box<Object>, w: Float) -> Box<Bender> {
-        let bbox = BoundingBox::new(
+        let bbox = BoundingBox::<Float>::new(
             Point::new(-o.bbox().max.y, -o.bbox().max.y, o.bbox().min.z),
             Point::new(o.bbox().max.y, o.bbox().max.y, o.bbox().max.z),
         );

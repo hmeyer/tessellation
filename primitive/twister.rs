@@ -7,7 +7,7 @@ pub struct Twister {
     object: Box<Object>,
     height_scaler: Float, // 2 * pi / (height for full rotation)
     value_scaler: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Object for Twister {
@@ -21,7 +21,7 @@ impl Object for Twister {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn set_parameters(&mut self, p: &PrimitiveParameters) {
@@ -45,7 +45,7 @@ impl Twister {
         // sin(atan(x)) =   x / sqrt(x^2 + 1)
         let scaler = tan_a / (tan_a * tan_a + 1.).sqrt();
 
-        let bbox = BoundingBox::new(
+        let bbox = BoundingBox::<Float>::new(
             Point::new(-r, -r, o.bbox().min.z),
             Point::new(r, r, o.bbox().max.z),
         );

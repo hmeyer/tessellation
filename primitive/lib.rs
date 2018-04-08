@@ -52,8 +52,8 @@ pub fn normal_from_object(f: &Object, p: Point) -> Vector {
 }
 
 pub trait Object: ObjectClone + Debug + Sync + Send {
-    fn bbox(&self) -> &BoundingBox;
-    fn set_bbox(&mut self, _: BoundingBox) {
+    fn bbox(&self) -> &BoundingBox<Float>;
+    fn set_bbox(&mut self, _: BoundingBox<Float>) {
         unimplemented!();
     }
     fn set_parameters(&mut self, _: &PrimitiveParameters) {}

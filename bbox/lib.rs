@@ -1,108 +1,120 @@
 extern crate alga;
 extern crate nalgebra as na;
-extern crate truescad_types;
+extern crate num_traits;
 
-use alga::linear::Transformation;
-use truescad_types::{Float, Transform, INFINITY, NEG_INFINITY};
+use alga::general::Real;
+use num_traits::Float;
+use std::fmt::Debug;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BoundingBox {
-    pub min: na::Point3<Float>,
-    pub max: na::Point3<Float>,
+pub struct BoundingBox<S: 'static + Real + Debug> {
+    pub min: na::Point3<S>,
+    pub max: na::Point3<S>,
 }
 
-fn point_min(p: &[na::Point3<Float>]) -> na::Point3<Float> {
+fn point_min<S: 'static + Float + Real + Debug>(p: &[na::Point3<S>]) -> na::Point3<S> {
     if p.len() == 1 {
         p[0]
     } else {
         let (p1, p2) = p.split_at(p.len() / 2);
         let a = point_min(p1);
         let b = point_min(p2);
-        na::Point3::<Float>::new(a.x.min(b.x), a.y.min(b.y), a.z.min(b.z))
+        na::Point3::<S>::new(
+            Real::min(a.x, b.x),
+            Real::min(a.y, b.y),
+            Real::min(a.z, b.z),
+        )
     }
 }
-fn point_max(p: &[na::Point3<Float>]) -> na::Point3<Float> {
+fn point_max<S: 'static + Float + Real + Debug>(p: &[na::Point3<S>]) -> na::Point3<S> {
     if p.len() == 1 {
         p[0]
     } else {
         let (p1, p2) = p.split_at(p.len() / 2);
         let a = point_max(p1);
         let b = point_max(p2);
-        na::Point3::<Float>::new(a.x.max(b.x), a.y.max(b.y), a.z.max(b.z))
+        na::Point3::<S>::new(
+            Real::max(a.x, b.x),
+            Real::max(a.y, b.y),
+            Real::max(a.z, b.z),
+        )
     }
 }
 
-impl BoundingBox {
-    pub fn infinity() -> BoundingBox {
+impl<S: 'static + Float + Real + Debug> BoundingBox<S> {
+    pub fn infinity() -> BoundingBox<S> {
         BoundingBox {
-            min: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY, NEG_INFINITY),
-            max: na::Point3::<Float>::new(INFINITY, INFINITY, INFINITY),
+            min: na::Point3::<S>::new(S::neg_infinity(), S::neg_infinity(), S::neg_infinity()),
+            max: na::Point3::<S>::new(S::infinity(), S::infinity(), S::infinity()),
         }
     }
-    pub fn neg_infinity() -> BoundingBox {
+    pub fn neg_infinity() -> BoundingBox<S> {
         BoundingBox {
-            min: na::Point3::<Float>::new(INFINITY, INFINITY, INFINITY),
-            max: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY, NEG_INFINITY),
+            min: na::Point3::<S>::new(S::infinity(), S::infinity(), S::infinity()),
+            max: na::Point3::<S>::new(S::neg_infinity(), S::neg_infinity(), S::neg_infinity()),
         }
     }
-    pub fn new(min: na::Point3<Float>, max: na::Point3<Float>) -> BoundingBox {
+    pub fn new(min: na::Point3<S>, max: na::Point3<S>) -> BoundingBox<S> {
         BoundingBox { min: min, max: max }
     }
-    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
+    pub fn union(&self, other: &BoundingBox<S>) -> BoundingBox<S> {
         BoundingBox {
             min: point_min(&[self.min, other.min]),
             max: point_max(&[self.max, other.max]),
         }
     }
-    pub fn intersection(&self, other: &BoundingBox) -> BoundingBox {
+    pub fn intersection(&self, other: &BoundingBox<S>) -> BoundingBox<S> {
         BoundingBox {
             min: point_max(&[self.min, other.min]),
             max: point_min(&[self.max, other.max]),
         }
     }
-    pub fn transform(&self, mat: &Transform) -> BoundingBox {
+    pub fn transform<M>(&self, mat: &M) -> BoundingBox<S>
+    where
+        M: alga::linear::Transformation<na::Point3<S>>,
+    {
         let a = &self.min;
         let b = &self.max;
         let corners = [
-            mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, a.z)),
-            mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, b.z)),
-            mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, a.z)),
-            mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, b.z)),
-            mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, a.z)),
-            mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, b.z)),
-            mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, a.z)),
-            mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, b.z)),
+            mat.transform_point(&na::Point3::<S>::new(a.x, a.y, a.z)),
+            mat.transform_point(&na::Point3::<S>::new(a.x, a.y, b.z)),
+            mat.transform_point(&na::Point3::<S>::new(a.x, b.y, a.z)),
+            mat.transform_point(&na::Point3::<S>::new(a.x, b.y, b.z)),
+            mat.transform_point(&na::Point3::<S>::new(b.x, a.y, a.z)),
+            mat.transform_point(&na::Point3::<S>::new(b.x, a.y, b.z)),
+            mat.transform_point(&na::Point3::<S>::new(b.x, b.y, a.z)),
+            mat.transform_point(&na::Point3::<S>::new(b.x, b.y, b.z)),
         ];
         BoundingBox {
             min: point_min(&corners),
             max: point_max(&corners),
         }
     }
-    pub fn dilate(&self, d: Float) -> BoundingBox {
+    pub fn dilate(&self, d: S) -> BoundingBox<S> {
         BoundingBox {
-            min: na::Point3::<Float>::new(self.min.x - d, self.min.y - d, self.min.z - d),
-            max: na::Point3::<Float>::new(self.max.x + d, self.max.y + d, self.max.z + d),
+            min: na::Point3::<S>::new(self.min.x - d, self.min.y - d, self.min.z - d),
+            max: na::Point3::<S>::new(self.max.x + d, self.max.y + d, self.max.z + d),
         }
     }
-    pub fn insert(&self, o: na::Point3<Float>) -> BoundingBox {
+    pub fn insert(&self, o: na::Point3<S>) -> BoundingBox<S> {
         BoundingBox {
             min: point_min(&[self.min, o]),
             max: point_max(&[self.max, o]),
         }
     }
-    pub fn dim(&self) -> na::Vector3<Float> {
+    pub fn dim(&self) -> na::Vector3<S> {
         self.max - self.min
     }
-    pub fn value(&self, p: na::Point3<Float>) -> Float {
+    pub fn value(&self, p: na::Point3<S>) -> S {
         // If p is not inside (neg), then it is outside (pos) on only one side.
         // So so calculating the max of the diffs on both sides should result in the true value,
         // if positive.
-        let xval = (p.x - self.max.x).max(self.min.x - p.x);
-        let yval = (p.y - self.max.y).max(self.min.y - p.y);
-        let zval = (p.z - self.max.z).max(self.min.z - p.z);
-        xval.max(yval.max(zval))
+        let xval = Real::max(p.x - self.max.x, self.min.x - p.x);
+        let yval = Real::max(p.y - self.max.y, self.min.y - p.y);
+        let zval = Real::max(p.z - self.max.z, self.min.z - p.z);
+        Real::max(xval, Real::max(yval, zval))
     }
-    pub fn contains(&self, p: na::Point3<Float>) -> bool {
+    pub fn contains(&self, p: na::Point3<S>) -> bool {
         p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y
             && p.z >= self.min.z && p.z <= self.max.z
     }

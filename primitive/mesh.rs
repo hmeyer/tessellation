@@ -10,7 +10,7 @@ struct Face {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Mesh {
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
     vertices: Vec<Vector>,
     faces: Vec<Face>,
 }
@@ -213,7 +213,7 @@ fn distance_point_face(face: [&Vector; 3], n: &Vector, p: &Vector) -> (Float, Fl
     );
 }
 
-fn bbox_for_mesh(mesh: &::stl_io::IndexedMesh) -> BoundingBox {
+fn bbox_for_mesh(mesh: &::stl_io::IndexedMesh) -> BoundingBox<Float> {
     mesh.vertices
         .iter()
         .fold(BoundingBox::neg_infinity(), |bbox, v| {
@@ -230,7 +230,7 @@ impl Object for Mesh {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn normal(&self, p: Point) -> Vector {

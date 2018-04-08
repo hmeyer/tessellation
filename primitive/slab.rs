@@ -4,7 +4,7 @@ use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 #[derive(Clone, Debug, PartialEq)]
 pub struct SlabX {
     distance_from_zero: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl SlabX {
@@ -12,7 +12,7 @@ impl SlabX {
         let d = thickness * 0.5;
         Box::new(SlabX {
             distance_from_zero: d,
-            bbox: BoundingBox::new(
+            bbox: BoundingBox::<Float>::new(
                 Point::new(-d, NEG_INFINITY, NEG_INFINITY),
                 Point::new(d, INFINITY, INFINITY),
             ),
@@ -24,7 +24,7 @@ impl Object for SlabX {
     fn approx_value(&self, p: Point, _: Float) -> Float {
         return p.x.abs() - self.distance_from_zero;
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn normal(&self, p: Point) -> Vector {
@@ -39,7 +39,7 @@ impl Object for SlabX {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SlabY {
     distance_from_zero: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl SlabY {
@@ -47,7 +47,7 @@ impl SlabY {
         let d = thickness * 0.5;
         Box::new(SlabY {
             distance_from_zero: d,
-            bbox: BoundingBox::new(
+            bbox: BoundingBox::<Float>::new(
                 Point::new(NEG_INFINITY, -d, NEG_INFINITY),
                 Point::new(INFINITY, d, INFINITY),
             ),
@@ -59,7 +59,7 @@ impl Object for SlabY {
     fn approx_value(&self, p: Point, _: Float) -> Float {
         return p.y.abs() - self.distance_from_zero;
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn normal(&self, p: Point) -> Vector {
@@ -74,7 +74,7 @@ impl Object for SlabY {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SlabZ {
     distance_from_zero: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl SlabZ {
@@ -82,7 +82,7 @@ impl SlabZ {
         let d = thickness * 0.5;
         Box::new(SlabZ {
             distance_from_zero: d,
-            bbox: BoundingBox::new(
+            bbox: BoundingBox::<Float>::new(
                 Point::new(NEG_INFINITY, NEG_INFINITY, -d),
                 Point::new(INFINITY, INFINITY, d),
             ),
@@ -94,7 +94,7 @@ impl Object for SlabZ {
     fn approx_value(&self, p: Point, _: Float) -> Float {
         return p.z.abs() - self.distance_from_zero;
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn normal(&self, p: Point) -> Vector {

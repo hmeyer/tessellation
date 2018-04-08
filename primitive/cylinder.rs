@@ -6,14 +6,17 @@ use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cylinder {
     radius: Float,
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Cylinder {
     pub fn new(r: Float) -> Box<Cylinder> {
         Box::new(Cylinder {
             radius: r,
-            bbox: BoundingBox::new(Point::new(-r, -r, NEG_INFINITY), Point::new(r, r, INFINITY)),
+            bbox: BoundingBox::<Float>::new(
+                Point::new(-r, -r, NEG_INFINITY),
+                Point::new(r, r, INFINITY),
+            ),
         })
     }
 }
@@ -28,7 +31,7 @@ impl Object for Cylinder {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
     fn normal(&self, p: Point) -> Vector {
@@ -44,7 +47,7 @@ pub struct Cone {
     distance_multiplier: Float,
     offset: Float,            // Offset the singularity from Z-zero
     normal_multiplier: Float, // muliplier for the normal caclulation
-    bbox: BoundingBox,
+    bbox: BoundingBox<Float>,
 }
 
 impl Cone {
@@ -54,16 +57,16 @@ impl Cone {
             distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
             offset: offset,
             normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
-            bbox: BoundingBox::infinity(),
+            bbox: BoundingBox::<Float>::infinity(),
         })
     }
 }
 
 impl Object for Cone {
-    fn bbox(&self) -> &BoundingBox {
+    fn bbox(&self) -> &BoundingBox<Float> {
         &self.bbox
     }
-    fn set_bbox(&mut self, bbox: BoundingBox) {
+    fn set_bbox(&mut self, bbox: BoundingBox<Float>) {
         self.bbox = bbox
     }
     fn approx_value(&self, p: Point, _: Float) -> Float {
