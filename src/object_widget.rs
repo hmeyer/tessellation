@@ -1,12 +1,10 @@
 use cairo::{Context, Format, ImageSurface};
 use gtk::DrawingArea;
-
 use gtk::Inhibit;
 use gtk::traits::*;
 use render;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-
 use truescad_types::Float;
 
 pub struct ObjectWidget {
@@ -45,15 +43,15 @@ impl ObjectWidget {
         {
             let mouse_pos_clone = xw.mouse_pos.clone();
             let renderer_clone = xw.renderer.clone();
-            xw.drawing_area
-                .connect_motion_notify_event(move |da: &DrawingArea,
-                                                   em: &::gdk::EventMotion|
-                                                   -> Inhibit {
+            xw.drawing_area.connect_motion_notify_event(
+                move |da: &DrawingArea, em: &::gdk::EventMotion| -> Inhibit {
                     let da_alloc = da.get_allocation();
                     let (nx, ny) = em.get_position();
                     let (ox, oy) = mouse_pos_clone.get();
-                    let (dx, dy) = (((nx - ox) / da_alloc.width as f64) as Float,
-                                    ((ny - oy) / da_alloc.height as f64) as Float);
+                    let (dx, dy) = (
+                        ((nx - ox) / da_alloc.width as f64) as Float,
+                        ((ny - oy) / da_alloc.height as f64) as Float,
+                    );
                     mouse_pos_clone.set(em.get_position());
                     match em.get_state() {
                         x if ::gdk::ModifierType::BUTTON1_MASK.intersects(x) => {
@@ -67,17 +65,17 @@ impl ObjectWidget {
                         _ => println!("unkown {:?}: {:?} {:?}", em.get_state(), dx, dy),
                     }
                     Inhibit(false)
-                });
+                },
+            );
         }
         {
             let mouse_pos_clone = xw.mouse_pos.clone();
-            xw.drawing_area
-                .connect_button_press_event(move |_: &DrawingArea,
-                                                  eb: &::gdk::EventButton|
-                                                  -> Inhibit {
-                                                mouse_pos_clone.set(eb.get_position());
-                                                Inhibit(false)
-                                            });
+            xw.drawing_area.connect_button_press_event(
+                move |_: &DrawingArea, eb: &::gdk::EventButton| -> Inhibit {
+                    mouse_pos_clone.set(eb.get_position());
+                    Inhibit(false)
+                },
+            );
         }
         xw
     }

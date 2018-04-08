@@ -1,6 +1,6 @@
-use {Object, PrimitiveParameters, BoundingBox};
+use {BoundingBox, Object, PrimitiveParameters};
 use alga::linear::{Similarity, Transformation};
-use truescad_types::{Float, PI, Point, Vector};
+use truescad_types::{Float, Point, Vector, PI};
 
 #[derive(Clone, Debug)]
 pub struct Twister {
@@ -15,8 +15,8 @@ impl Object for Twister {
         let approx = self.bbox.value(p);
         if approx <= slack {
             self.object
-                .approx_value(self.twist_point(p), slack / self.value_scaler) *
-            self.value_scaler
+                .approx_value(self.twist_point(p), slack / self.value_scaler)
+                * self.value_scaler
         } else {
             approx
         }
@@ -45,14 +45,16 @@ impl Twister {
         // sin(atan(x)) =   x / sqrt(x^2 + 1)
         let scaler = tan_a / (tan_a * tan_a + 1.).sqrt();
 
-        let bbox = BoundingBox::new(Point::new(-r, -r, o.bbox().min.z),
-                                    Point::new(r, r, o.bbox().max.z));
+        let bbox = BoundingBox::new(
+            Point::new(-r, -r, o.bbox().min.z),
+            Point::new(r, r, o.bbox().max.z),
+        );
         Box::new(Twister {
-                     object: o,
-                     height_scaler: PI * 2. / h,
-                     value_scaler: scaler,
-                     bbox: bbox,
-                 })
+            object: o,
+            height_scaler: PI * 2. / h,
+            value_scaler: scaler,
+            bbox: bbox,
+        })
     }
     fn twist_point(&self, p: Point) -> Point {
         let p2 = ::na::Point2::new(p.x, p.y);

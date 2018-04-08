@@ -1,9 +1,9 @@
 use gtk::Inhibit;
 use gtk::traits::*;
-use sourceview::{BufferExt, LanguageManagerExt, StyleSchemeManagerExt};
 use mesh_view;
 use object_widget;
 use settings;
+use sourceview::{BufferExt, LanguageManagerExt, StyleSchemeManagerExt};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::io::prelude::*;
@@ -15,8 +15,8 @@ use truescad_tessellation::Mesh;
 #[derive(Clone)]
 pub struct Editor {
     pub widget: ::gtk::ScrolledWindow,
-        source_view: ::sourceview::View,
-        buffer: Option<::sourceview::Buffer>,
+    source_view: ::sourceview::View,
+    buffer: Option<::sourceview::Buffer>,
 }
 
 
@@ -27,7 +27,8 @@ impl Editor {
         let mut src_view = ::sourceview::View::new();
         if let Some(lang_mgr) = ::sourceview::LanguageManager::get_default() {
             let lang_search_paths = lang_mgr.get_search_path();
-            let mut lang_search_paths_str: Vec<&str> = lang_search_paths.iter().map(AsRef::as_ref).collect();
+            let mut lang_search_paths_str: Vec<&str> =
+                lang_search_paths.iter().map(AsRef::as_ref).collect();
             lang_search_paths_str.push("./language-specs/");
             lang_mgr.set_search_path(&lang_search_paths_str);
             if let Some(lua) = lang_mgr.get_language("truescad-lua") {
@@ -37,12 +38,20 @@ impl Editor {
                         let b = ::sourceview::Buffer::new_with_language(&lua);
                         b.set_highlight_syntax(true);
                         b.set_style_scheme(&scheme);
-                        src_view=::sourceview::View::new_with_buffer(&b);
+                        src_view = ::sourceview::View::new_with_buffer(&b);
                         buffer = Some(b);
-                    } else { println!("failed to get scheme."); }
-                } else { println!("failed to get default StyleSchemeManager."); }
-            } else { println!("failed to get lang."); }
-        } else { println!("failed to get default LanguageManager."); }
+                    } else {
+                        println!("failed to get scheme.");
+                    }
+                } else {
+                    println!("failed to get default StyleSchemeManager.");
+                }
+            } else {
+                println!("failed to get lang.");
+            }
+        } else {
+            println!("failed to get default LanguageManager.");
+        }
 
 
         widget.add(&src_view);
@@ -58,11 +67,8 @@ impl Editor {
         };
         let editor_clone = editor.clone();
 
-        editor
-            .source_view
-            .connect_key_release_event(move |_: &::sourceview::View,
-                                             key: &::gdk::EventKey|
-                                             -> Inhibit {
+        editor.source_view.connect_key_release_event(
+            move |_: &::sourceview::View, key: &::gdk::EventKey| -> Inhibit {
                 match key.get_keyval() {
                     ::gdk::enums::key::F5 => {
                         // compile
@@ -77,15 +83,18 @@ impl Editor {
                     }
                 }
                 Inhibit(false)
-            });
+            },
+        );
         editor
     }
     fn get_object(&self, msg: &mut Write) -> Option<Box<truescad_primitive::Object>> {
         let code_buffer = self.source_view.get_buffer().unwrap();
         let code_text = code_buffer
-            .get_text(&code_buffer.get_start_iter(),
-                      &code_buffer.get_end_iter(),
-                      true)
+            .get_text(
+                &code_buffer.get_start_iter(),
+                &code_buffer.get_end_iter(),
+                true,
+            )
             .unwrap();
         match truescad_luascad::eval(&code_text) {
             Ok((print_result, maybe_object)) => {
@@ -94,9 +103,9 @@ impl Editor {
                     Some(mut o) => {
                         let s = settings::SettingsData::new();
                         o.set_parameters(&truescad_primitive::PrimitiveParameters {
-                                             fade_range: s.fade_range,
-                                             r_multiplier: s.r_multiplier,
-                                         });
+                            fade_range: s.fade_range,
+                            r_multiplier: s.r_multiplier,
+                        });
                         Some(o)
                     }
                     None => {
@@ -151,16 +160,20 @@ fn save_from_sourceview(source_view: &::sourceview::View, filename: &str) {
     if let Ok(f) = open_result {
         let code_buffer = source_view.get_buffer().unwrap();
         let code_text = code_buffer
-            .get_text(&code_buffer.get_start_iter(),
-                      &code_buffer.get_end_iter(),
-                      true)
+            .get_text(
+                &code_buffer.get_start_iter(),
+                &code_buffer.get_end_iter(),
+                true,
+            )
             .unwrap();
         let mut writer = BufWriter::new(f);
         let write_result = writer.write(code_text.as_bytes());
         println!("writing {:?}: {:?}", &filename, write_result);
     } else {
-        println!("opening for write {:?} failed: {:?}",
-                 &filename,
-                 open_result);
+        println!(
+            "opening for write {:?} failed: {:?}",
+            &filename,
+            open_result
+        );
     }
 }

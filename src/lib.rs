@@ -5,24 +5,24 @@
 //         unstable_features,
 //         unused_import_braces, unused_qualifications)]
 
-extern crate cairo;
-extern crate gtk;
-extern crate sourceview;
-extern crate gdk;
-extern crate nalgebra as na;
 extern crate alga;
+extern crate cairo;
+extern crate gdk;
+extern crate gtk;
 extern crate kiss3d;
+extern crate nalgebra as na;
 extern crate nalgebra;
 extern crate rayon;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
+extern crate sourceview;
+extern crate stl_io;
 extern crate toml;
-extern crate truescad_types;
+extern crate truescad_luascad;
 extern crate truescad_primitive;
 extern crate truescad_tessellation;
-extern crate truescad_luascad;
-extern crate stl_io;
+extern crate truescad_types;
 
 pub mod render;
 pub mod object_widget;

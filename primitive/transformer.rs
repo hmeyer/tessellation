@@ -1,6 +1,6 @@
-use {Object, PrimitiveParameters, BoundingBox};
+use {BoundingBox, Object, PrimitiveParameters};
 use alga::linear::Transformation;
-use truescad_types::{Float, Transform, Point, Vector};
+use truescad_types::{Float, Point, Transform, Vector};
 
 #[derive(Clone, Debug)]
 pub struct AffineTransformer {
@@ -15,8 +15,8 @@ impl Object for AffineTransformer {
         let approx = self.bbox.value(p);
         if approx <= slack {
             self.object
-                .approx_value(self.transform.transform_point(&p), slack / self.scale_min) *
-            self.scale_min
+                .approx_value(self.transform.transform_point(&p), slack / self.scale_min)
+                * self.scale_min
         } else {
             approx
         }
@@ -44,9 +44,11 @@ impl Object for AffineTransformer {
     fn scale(&self, s: Vector) -> Box<Object> {
         let new_trans = self.transform
             .append_nonuniform_scaling(&Vector::new(1. / s.x, 1. / s.y, 1. / s.z));
-        AffineTransformer::new_with_scaler(self.object.clone(),
-                                           new_trans,
-                                           self.scale_min * s.x.min(s.y.min(s.z)))
+        AffineTransformer::new_with_scaler(
+            self.object.clone(),
+            new_trans,
+            self.scale_min * s.x.min(s.y.min(s.z)),
+        )
     }
 }
 
@@ -69,11 +71,11 @@ impl AffineTransformer {
             Some(t_inv) => {
                 let bbox = o.bbox().transform(&t_inv);
                 Box::new(AffineTransformer {
-                             object: o,
-                             transform: t,
-                             scale_min: scale_min,
-                             bbox: bbox,
-                         })
+                    object: o,
+                    transform: t,
+                    scale_min: scale_min,
+                    bbox: bbox,
+                })
             }
         }
     }
@@ -102,9 +104,9 @@ mod test {
     impl MockObject {
         pub fn new(value: Float, normal: Vector) -> Box<MockObject> {
             Box::new(MockObject {
-                         value: value,
-                         normal: normal,
-                     })
+                value: value,
+                normal: normal,
+            })
         }
     }
 

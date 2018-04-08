@@ -1,45 +1,45 @@
 #[macro_use]
 extern crate bencher;
-extern crate truescad_tessellation;
 extern crate truescad_primitive;
+extern crate truescad_tessellation;
 extern crate truescad_types;
 use bencher::Bencher;
-use truescad_primitive::{Object, Sphere, SlabX, SlabY, SlabZ, Intersection};
+use truescad_primitive::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
 
 fn create_cube() -> Box<Object> {
-    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap() as
-    Box<Object>
+    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap()
+        as Box<Object>
 }
 
 fn create_hollow_cube() -> Box<Object> {
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap() as
-    Box<Object>
+    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap()
+        as Box<Object>
 }
 
 fn creat_tessellation() -> truescad_tessellation::ManifoldDualContouringImpl {
     let mut object = create_hollow_cube();
     object.set_parameters(&truescad_primitive::PrimitiveParameters {
-                              fade_range: 0.1,
-                              r_multiplier: 1.0,
-                          });
+        fade_range: 0.1,
+        r_multiplier: 1.0,
+    });
     return truescad_tessellation::ManifoldDualContouringImpl::new(object, 0.02, 0.1);
 }
 
 fn sample_value_grid(b: &mut Bencher) {
     let tess = creat_tessellation();
     b.iter(|| {
-               let mut my_tess = tess.clone();
-               my_tess.tessellation_step1()
-           });
+        let mut my_tess = tess.clone();
+        my_tess.tessellation_step1()
+    });
 }
 
 fn compact_value_grid(b: &mut Bencher) {
     let mut tess = creat_tessellation();
     tess.tessellation_step1();
     b.iter(|| {
-               let mut my_tess = tess.clone();
-               my_tess.compact_value_grid()
-           });
+        let mut my_tess = tess.clone();
+        my_tess.compact_value_grid()
+    });
 }
 
 fn generate_edge_grid(b: &mut Bencher) {
@@ -47,9 +47,9 @@ fn generate_edge_grid(b: &mut Bencher) {
     tess.tessellation_step1();
     tess.compact_value_grid();
     b.iter(|| {
-               let mut my_tess = tess.clone();
-               my_tess.generate_edge_grid()
-           });
+        let mut my_tess = tess.clone();
+        my_tess.generate_edge_grid()
+    });
 }
 
 fn generate_leaf_vertices(b: &mut Bencher) {
@@ -58,9 +58,9 @@ fn generate_leaf_vertices(b: &mut Bencher) {
     tess.compact_value_grid();
     tess.generate_edge_grid();
     b.iter(|| {
-               let my_tess = tess.clone();
-               my_tess.generate_leaf_vertices()
-           });
+        let my_tess = tess.clone();
+        my_tess.generate_leaf_vertices()
+    });
 }
 
 fn subsample_octtree(b: &mut Bencher) {
@@ -100,9 +100,9 @@ fn solve_qefs(b: &mut Bencher) {
         tess.vertex_octtree.push(next);
     }
     b.iter(|| {
-               let my_tess = tess.clone();
-               my_tess.solve_qefs();
-           });
+        let my_tess = tess.clone();
+        my_tess.solve_qefs();
+    });
 }
 
 fn compute_quad(b: &mut Bencher) {
@@ -122,21 +122,23 @@ fn compute_quad(b: &mut Bencher) {
     }
     tess.solve_qefs();
     b.iter(|| {
-               let my_tess = tess.clone();
-               for edge_index in my_tess.edge_grid.borrow().keys() {
-                   my_tess.compute_quad(*edge_index);
-               }
-           });
+        let my_tess = tess.clone();
+        for edge_index in my_tess.edge_grid.borrow().keys() {
+            my_tess.compute_quad(*edge_index);
+        }
+    });
 }
 
 
 
-benchmark_group!(bench_tessellation,
-                 sample_value_grid,
-                 compact_value_grid,
-                 generate_edge_grid,
-                 generate_leaf_vertices,
-                 subsample_octtree,
-                 solve_qefs,
-                 compute_quad);
+benchmark_group!(
+    bench_tessellation,
+    sample_value_grid,
+    compact_value_grid,
+    generate_edge_grid,
+    generate_leaf_vertices,
+    subsample_octtree,
+    solve_qefs,
+    compute_quad
+);
 benchmark_main!(bench_tessellation);

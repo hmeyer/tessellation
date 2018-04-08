@@ -1,5 +1,5 @@
-use {ALWAYS_PRECISE, Object, BoundingBox, PrimitiveParameters, normal_from_object};
-use truescad_types::{Float, INFINITY, NEG_INFINITY, Point, Vector};
+use {normal_from_object, BoundingBox, Object, PrimitiveParameters, ALWAYS_PRECISE};
+use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 pub const FADE_RANGE: Float = 0.1;
 pub const R_MULTIPLIER: Float = 1.0;
@@ -9,7 +9,7 @@ pub struct Union {
     objs: Vec<Box<Object>>,
     r: Float,
     exact_range: Float, // Calculate smooth transitions over this range
-    fade_range: Float, // Fade normal over this fraction of the smoothing range
+    fade_range: Float,  // Fade normal over this fraction of the smoothing range
     bbox: BoundingBox,
 }
 
@@ -20,16 +20,17 @@ impl Union {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(BoundingBox::neg_infinity(),
-                          |union_box, x| union_box.union(x.bbox()))
+                    .fold(BoundingBox::neg_infinity(), |union_box, x| {
+                        union_box.union(x.bbox())
+                    })
                     .dilate(r * 0.2); // dilate by some factor of r
                 Some(Box::new(Union {
-                                  objs: v,
-                                  r: r,
-                                  bbox: bbox,
-                                  exact_range: r * R_MULTIPLIER,
-                                  fade_range: FADE_RANGE,
-                              }))
+                    objs: v,
+                    r: r,
+                    bbox: bbox,
+                    exact_range: r * R_MULTIPLIER,
+                    fade_range: FADE_RANGE,
+                }))
             }
         }
     }
@@ -39,12 +40,14 @@ impl Object for Union {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
         let approx = self.bbox.value(p);
         if approx <= slack {
-            rvmin(&self.objs
-                       .iter()
-                       .map(|o| o.approx_value(p, slack + self.r))
-                       .collect::<Vec<Float>>(),
-                  self.r,
-                  self.exact_range)
+            rvmin(
+                &self.objs
+                    .iter()
+                    .map(|o| o.approx_value(p, slack + self.r))
+                    .collect::<Vec<Float>>(),
+                self.r,
+                self.exact_range,
+            )
         } else {
             approx
         }
@@ -61,10 +64,9 @@ impl Object for Union {
     }
     fn normal(&self, p: Point) -> Vector {
         // Find the two smallest values with their indices.
-        let (v0, v1) = self.objs
-            .iter()
-            .enumerate()
-            .fold(((0, INFINITY), (0, INFINITY)), |(v0, v1), x| {
+        let (v0, v1) = self.objs.iter().enumerate().fold(
+            ((0, INFINITY), (0, INFINITY)),
+            |(v0, v1), x| {
                 let t = x.1.approx_value(p, ALWAYS_PRECISE);
                 if t < v0.1 {
                     ((x.0, t), v0)
@@ -73,7 +75,8 @@ impl Object for Union {
                 } else {
                     (v0, v1)
                 }
-            });
+            },
+        );
         match (v0.1 - v1.1).abs() {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (1. - self.fade_range)) => {
@@ -96,7 +99,7 @@ pub struct Intersection {
     objs: Vec<Box<Object>>,
     r: Float,
     exact_range: Float, // Calculate smooth transitions over this range
-    fade_range: Float, // Fade normal over this fraction of the smoothing range
+    fade_range: Float,  // Fade normal over this fraction of the smoothing range
     bbox: BoundingBox,
 }
 
@@ -107,15 +110,16 @@ impl Intersection {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(BoundingBox::infinity(),
-                          |intersection_box, x| intersection_box.intersection(x.bbox()));
+                    .fold(BoundingBox::infinity(), |intersection_box, x| {
+                        intersection_box.intersection(x.bbox())
+                    });
                 Some(Box::new(Intersection {
-                                  objs: v,
-                                  r: r,
-                                  bbox: bbox,
-                                  exact_range: r * R_MULTIPLIER,
-                                  fade_range: FADE_RANGE,
-                              }))
+                    objs: v,
+                    r: r,
+                    bbox: bbox,
+                    exact_range: r * R_MULTIPLIER,
+                    fade_range: FADE_RANGE,
+                }))
             }
         }
     }
@@ -129,7 +133,6 @@ impl Intersection {
                 Intersection::from_vec(v, r)
             }
         }
-
     }
 }
 
@@ -137,12 +140,14 @@ impl Object for Intersection {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
         let approx = self.bbox.value(p);
         if approx <= slack {
-            rvmax(&self.objs
-                       .iter()
-                       .map(|o| o.approx_value(p, slack + self.r))
-                       .collect::<Vec<Float>>(),
-                  self.r,
-                  self.exact_range)
+            rvmax(
+                &self.objs
+                    .iter()
+                    .map(|o| o.approx_value(p, slack + self.r))
+                    .collect::<Vec<Float>>(),
+                self.r,
+                self.exact_range,
+            )
         } else {
             approx
         }
@@ -159,10 +164,9 @@ impl Object for Intersection {
     }
     fn normal(&self, p: Point) -> Vector {
         // Find the two largest values with their indices.
-        let (v0, v1) = self.objs
-            .iter()
-            .enumerate()
-            .fold(((0, NEG_INFINITY), (0, NEG_INFINITY)), |(v0, v1), x| {
+        let (v0, v1) = self.objs.iter().enumerate().fold(
+            ((0, NEG_INFINITY), (0, NEG_INFINITY)),
+            |(v0, v1), x| {
                 let t = x.1.approx_value(p, ALWAYS_PRECISE);
                 if t > v0.1 {
                     ((x.0, t), v0)
@@ -171,7 +175,8 @@ impl Object for Intersection {
                 } else {
                     (v0, v1)
                 }
-            });
+            },
+        );
         match (v0.1 - v1.1).abs() {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (1. - self.fade_range)) => {
@@ -198,7 +203,12 @@ pub struct Negation {
 impl Negation {
     pub fn from_vec(v: Vec<Box<Object>>) -> Vec<Box<Object>> {
         v.iter()
-            .map(|o| Box::new(Negation { object: o.clone(), infinity_bbox: BoundingBox::infinity() }) as Box<Object>)
+            .map(|o| {
+                Box::new(Negation {
+                    object: o.clone(),
+                    infinity_bbox: BoundingBox::infinity(),
+                }) as Box<Object>
+            })
             .collect()
     }
 }
@@ -217,8 +227,8 @@ impl Object for Negation {
 
 fn rvmin(v: &[Float], r: Float, exact_range: Float) -> Float {
     let mut close_min = false;
-    let minimum = v.iter()
-        .fold(INFINITY, |min, x| if x < &min {
+    let minimum = v.iter().fold(INFINITY, |min, x| {
+        if x < &min {
             if (min - x) < exact_range {
                 close_min = true;
             } else {
@@ -230,7 +240,8 @@ fn rvmin(v: &[Float], r: Float, exact_range: Float) -> Float {
                 close_min = true;
             }
             min
-        });
+        }
+    });
     if !close_min {
         return minimum;
     }
@@ -245,8 +256,8 @@ fn rvmin(v: &[Float], r: Float, exact_range: Float) -> Float {
 
 fn rvmax(v: &[Float], r: Float, exact_range: Float) -> Float {
     let mut close_max = false;
-    let maximum = v.iter()
-        .fold(NEG_INFINITY, |max, x| if x > &max {
+    let maximum = v.iter().fold(NEG_INFINITY, |max, x| {
+        if x > &max {
             if (x - max) < exact_range {
                 close_max = true;
             } else {
@@ -258,7 +269,8 @@ fn rvmax(v: &[Float], r: Float, exact_range: Float) -> Float {
                 close_max = true;
             }
             max
-        });
+        }
+    });
     if !close_max {
         return maximum;
     }

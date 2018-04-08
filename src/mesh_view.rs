@@ -4,7 +4,7 @@ use nalgebra as na;
 use std::cell::RefCell;
 use std::mem;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex, ONCE_INIT, Once};
+use std::sync::{Arc, Mutex, Once, ONCE_INIT};
 use truescad_tessellation::Mesh;
 
 #[derive(Clone)]
@@ -22,7 +22,9 @@ fn singleton_window() -> SingletonWindow {
     unsafe {
         ONCE.call_once(|| {
             // Make it
-            let window = SingletonWindow { inner: Arc::new(Mutex::new(Window::new("MeshView"))) };
+            let window = SingletonWindow {
+                inner: Arc::new(Mutex::new(Window::new("MeshView"))),
+            };
 
             // Put it in the heap so it can outlive this call
             SINGLETON = mem::transmute(Box::new(window));
@@ -63,5 +65,11 @@ fn tessellation_to_kiss3d_mesh(mesh: &Mesh) -> Rc<RefCell<::kiss3d::resource::Me
             na_verts.push(na::Point3::new(p[0] as f32, p[1] as f32, p[2] as f32));
         }
     }
-    Rc::new(RefCell::new(::kiss3d::resource::Mesh::new(na_verts, na_faces, None, None, true)))
+    Rc::new(RefCell::new(::kiss3d::resource::Mesh::new(
+        na_verts,
+        na_faces,
+        None,
+        None,
+        true,
+    )))
 }

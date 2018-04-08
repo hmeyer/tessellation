@@ -26,11 +26,15 @@ macro_rules! add_setting {
 pub fn show_settings_dialog<T: ::gtk::IsA<::gtk::Window>>(parent: Option<&T>) {
     let data = Rc::new(RefCell::new(SettingsData::new()));
 
-    let dialog = ::gtk::Dialog::new_with_buttons(Some("Settings"),
-                                                 parent,
-                                                 ::gtk::DialogFlags::MODAL,
-                                                 &[("OK", ::gtk::ResponseType::Ok.into()),
-                                                   ("Cancel", ::gtk::ResponseType::Cancel.into())]);
+    let dialog = ::gtk::Dialog::new_with_buttons(
+        Some("Settings"),
+        parent,
+        ::gtk::DialogFlags::MODAL,
+        &[
+            ("OK", ::gtk::ResponseType::Ok.into()),
+            ("Cancel", ::gtk::ResponseType::Cancel.into()),
+        ],
+    );
     // TODO: use rustc_serialize::Encodable to generate settings items
     dialog
         .get_content_area()
@@ -83,9 +87,11 @@ impl SettingsData {
         let f = try!(File::open(path).map_err(SettingsError::Io));
         let mut reader = BufReader::new(f);
         let mut buffer = String::new();
-        let _ = try!(reader
-                         .read_to_string(&mut buffer)
-                         .map_err(SettingsError::Io));
+        let _ = try!(
+            reader
+                .read_to_string(&mut buffer)
+                .map_err(SettingsError::Io)
+        );
         return ::toml::from_str(&buffer).map_err(SettingsError::Dec);
     }
     pub fn new() -> SettingsData {

@@ -1,12 +1,12 @@
+extern crate byteorder;
 #[macro_use]
 extern crate lazy_static;
-extern crate rand;
 extern crate nalgebra as na;
+extern crate rand;
 extern crate rayon;
-extern crate truescad_types;
-extern crate truescad_primitive;
 extern crate time;
-extern crate byteorder;
+extern crate truescad_primitive;
+extern crate truescad_types;
 
 use truescad_types::{Float, Point, Vector};
 
@@ -23,7 +23,6 @@ mod cell_configs;
 mod qef;
 
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
-
 // This is just exposed for the bench test - do not use!
 pub use self::manifold_dual_contouring::ManifoldDualContouringImpl;
 pub use self::manifold_dual_contouring::subsample_octtree;
@@ -37,11 +36,18 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn normal32(&self, face: usize) -> [f32; 3] {
-        let v: Vec<na::Point3<f32>> = self.faces[face].iter()
-            .map(|&i| na::Point3::<f32>::new(self.vertices[i][0] as f32, self.vertices[i][1] as f32, self.vertices[i][2] as f32))
+        let v: Vec<na::Point3<f32>> = self.faces[face]
+            .iter()
+            .map(|&i| {
+                na::Point3::<f32>::new(
+                    self.vertices[i][0] as f32,
+                    self.vertices[i][1] as f32,
+                    self.vertices[i][2] as f32,
+                )
+            })
             .collect();
-            let r = (v[1] - v[0]).cross(&(v[2] - v[0])).normalize();
-            [r[0], r[1], r[2]]
+        let r = (v[1] - v[0]).cross(&(v[2] - v[0])).normalize();
+        [r[0], r[1], r[2]]
     }
     pub fn vertex32(&self, i: usize) -> [f32; 3] {
         let v = self.vertices[i];

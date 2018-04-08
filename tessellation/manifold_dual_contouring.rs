@@ -1,3 +1,4 @@
+use super::Mesh;
 use Plane;
 use bitset::BitSet;
 use cell_configs::CELL_CONFIGS;
@@ -8,11 +9,10 @@ use std::{error, fmt};
 use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
-use truescad_primitive::{BoundingBox, Object, normal_from_object};
+use truescad_primitive::{normal_from_object, BoundingBox, Object};
 use truescad_types;
 use truescad_types::{Float, Point, Vector};
-use vertex_index::{EDGES_ON_FACE, Index, VarIndex, VertexIndex, neg_offset, offset};
-use super::Mesh;
+use vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};
 
 // How accurately find zero crossings.
 const PRECISION: Float = 0.05;
@@ -73,14 +73,27 @@ impl Edge {
 }
 
 // Cell offsets of edges
-const EDGE_OFFSET: [Index; 12] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 1, 0], [1, 0, 0],
-                                  [1, 0, 0], [0, 0, 1], [0, 0, 1], [0, 1, 0], [0, 1, 1],
-                                  [1, 0, 1], [1, 1, 0]];
+const EDGE_OFFSET: [Index; 12] = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 1, 0],
+    [1, 0, 0],
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 1, 0],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 0],
+];
 
 // Quad definition for edges 0-2.
-const QUADS: [[Edge; 4]; 3] = [[Edge::A, Edge::G, Edge::J, Edge::D],
-                               [Edge::B, Edge::E, Edge::K, Edge::H],
-                               [Edge::C, Edge::I, Edge::L, Edge::F]];
+const QUADS: [[Edge; 4]; 3] = [
+    [Edge::A, Edge::G, Edge::J, Edge::D],
+    [Edge::B, Edge::E, Edge::K, Edge::H],
+    [Edge::C, Edge::I, Edge::L, Edge::F],
+];
 
 lazy_static! {
     static ref OUTSIDE_EDGES_PER_CORNER: [BitSet; 8] = [BitSet::from_3bits(0, 1, 2),
@@ -134,12 +147,14 @@ impl Clone for Vertex {
         Vertex {
             index: self.index,
             qef: self.qef.clone(),
-            neighbors: [self.neighbors[0].clone(),
-                        self.neighbors[1].clone(),
-                        self.neighbors[2].clone(),
-                        self.neighbors[3].clone(),
-                        self.neighbors[4].clone(),
-                        self.neighbors[5].clone()],
+            neighbors: [
+                self.neighbors[0].clone(),
+                self.neighbors[1].clone(),
+                self.neighbors[2].clone(),
+                self.neighbors[3].clone(),
+                self.neighbors[4].clone(),
+                self.neighbors[5].clone(),
+            ],
             parent: self.parent.clone(),
             children: self.children.clone(),
             mesh_index: self.mesh_index.clone(),
@@ -191,7 +206,9 @@ impl ManifoldDualContouring {
     // res: resolution
     // relative_error: acceptable error threshold when simplifying the mesh.
     pub fn new(obj: Box<Object>, res: Float, relative_error: Float) -> ManifoldDualContouring {
-        ManifoldDualContouring { impl_: ManifoldDualContouringImpl::new(obj, res, relative_error) }
+        ManifoldDualContouring {
+            impl_: ManifoldDualContouringImpl::new(obj, res, relative_error),
+        }
     }
     pub fn tessellate(&mut self) -> Option<Mesh> {
         self.impl_.tessellate()
@@ -247,13 +264,15 @@ fn get_connected_edges_from_edge_set(edge_set: BitSet, cell: BitSet) -> Vec<BitS
             result.push(cell_edge_set);
         }
     }
-    debug_assert!(result
-                      .iter()
-                      .fold(BitSet::zero(), |sum, x| sum.merge(*x))
-                      .intersect(edge_set) == edge_set,
-                  "result: {:?} does not contain all edges from egde_set: {:?}",
-                  result,
-                  edge_set);
+    debug_assert!(
+        result
+            .iter()
+            .fold(BitSet::zero(), |sum, x| sum.merge(*x))
+            .intersect(edge_set) == edge_set,
+        "result: {:?} does not contain all edges from egde_set: {:?}",
+        result,
+        edge_set
+    );
     result
 }
 
@@ -263,9 +282,11 @@ fn half_index(input: &Index) -> Index {
 
 // Will add the following vertices to neighbors:
 // All vertices in the same octtree subcell as start and connected to start.
-fn add_connected_vertices_in_subcell(base: &Vec<Vertex>,
-                                     start: &Vertex,
-                                     neigbors: &mut BTreeSet<usize>) {
+fn add_connected_vertices_in_subcell(
+    base: &Vec<Vertex>,
+    start: &Vertex,
+    neigbors: &mut BTreeSet<usize>,
+) {
     let parent_index = half_index(&start.index);
     for neighbor_index_vector in start.neighbors.iter() {
         for neighbor_index in neighbor_index_vector.iter() {
@@ -298,9 +319,10 @@ fn add_child_to_parent(child: &Vertex, parent: &mut Vertex) {
     }
 }
 
-fn subsample_euler_characteristics(children: &BTreeSet<usize>,
-                                   vertices: &Vec<Vertex>)
-                                   -> ([u32; 12], i32) {
+fn subsample_euler_characteristics(
+    children: &BTreeSet<usize>,
+    vertices: &Vec<Vertex>,
+) -> ([u32; 12], i32) {
     let mut intersections = [0u32; 12];
     let mut euler = 0i32;
     let mut inner_sum = 0;
@@ -317,10 +339,12 @@ fn subsample_euler_characteristics(children: &BTreeSet<usize>,
         }
         euler += vertex.euler_characteristic;
     }
-    debug_assert_eq!(inner_sum % 4,
-                     0,
-                     "inner_sum {} is not divisible by 4.",
-                     inner_sum);
+    debug_assert_eq!(
+        inner_sum % 4,
+        0,
+        "inner_sum {} is not divisible by 4.",
+        inner_sum
+    );
     euler -= inner_sum as i32 / 4;
     (intersections, euler)
 }
@@ -336,7 +360,14 @@ pub fn subsample_octtree(base: &Vec<Vertex>) -> Vec<Vertex> {
             let mut parent = Vertex {
                 index: half_index(&vertex.index),
                 qef: RefCell::new(qef::Qef::new(&[], BoundingBox::neg_infinity())),
-                neighbors: [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()],
+                neighbors: [
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                ],
                 parent: Cell::new(None),
                 children: Vec::new(),
                 mesh_index: Cell::new(None),
@@ -345,10 +376,12 @@ pub fn subsample_octtree(base: &Vec<Vertex>) -> Vec<Vertex> {
             };
             for &neighbor_index in neighbor_set.iter() {
                 let child = &base[neighbor_index];
-                debug_assert!(child.parent.get() == None,
-                              "child #{:?} already has parent #{:?}",
-                              neighbor_index,
-                              child.parent.get().unwrap());
+                debug_assert!(
+                    child.parent.get() == None,
+                    "child #{:?} already has parent #{:?}",
+                    neighbor_index,
+                    child.parent.get().unwrap()
+                );
                 debug_assert!(!parent.children.contains(&neighbor_index));
                 parent.children.push(neighbor_index);
                 add_child_to_parent(child, &mut parent);
@@ -400,13 +433,15 @@ impl ManifoldDualContouringImpl {
         ManifoldDualContouringImpl {
             object: obj,
             origin: bbox.min,
-            dim: [(bbox.dim()[0] / res).ceil() as usize,
-                  (bbox.dim()[1] / res).ceil() as usize,
-                  (bbox.dim()[2] / res).ceil() as usize],
+            dim: [
+                (bbox.dim()[0] / res).ceil() as usize,
+                (bbox.dim()[1] / res).ceil() as usize,
+                (bbox.dim()[2] / res).ceil() as usize,
+            ],
             mesh: RefCell::new(Mesh {
-                                   vertices: Vec::new(),
-                                   faces: Vec::new(),
-                               }),
+                vertices: Vec::new(),
+                faces: Vec::new(),
+            }),
             res: res,
             error: res * relative_error,
             value_grid: HashMap::new(),
@@ -416,22 +451,22 @@ impl ManifoldDualContouringImpl {
         }
     }
     pub fn tessellate(&mut self) -> Option<Mesh> {
-        println!("ManifoldDualContouringImpl: res: {:} {:?}",
-                 self.res,
-                 self.object.bbox());
+        println!(
+            "ManifoldDualContouringImpl: res: {:} {:?}",
+            self.res,
+            self.object.bbox()
+        );
         loop {
             match self.try_tessellate() {
                 Ok(mesh) => return Some(mesh),
                 // Tessellation failed, b/c the value in one of the grid cells was exactly zero.
                 // Retry with some random padding and hope for the best.
                 Err(e) => {
-                    let padding =
-                        truescad_types::Vector::new(-self.res /
-                                                    (10. + rand::random::<Float>().abs()),
-                                                    -self.res /
-                                                    (10. + rand::random::<Float>().abs()),
-                                                    -self.res /
-                                                    (10. + rand::random::<Float>().abs()));
+                    let padding = truescad_types::Vector::new(
+                        -self.res / (10. + rand::random::<Float>().abs()),
+                        -self.res / (10. + rand::random::<Float>().abs()),
+                        -self.res / (10. + rand::random::<Float>().abs()),
+                    );
                     println!("Error: {:?}. moving by {:?} and retrying.", e, padding);
                     self.origin += padding;
                     self.value_grid.clear();
@@ -460,30 +495,38 @@ impl ManifoldDualContouringImpl {
             return Err(e);
         }
         let total_cells = self.dim[0] * self.dim[1] * self.dim[2];
-        println!("generated value_grid with {:} % of {:} cells in {:}.",
-                 (100 * self.value_grid.len()) as f64 / total_cells as f64,
-                 total_cells,
-                 t.elapsed());
+        println!(
+            "generated value_grid with {:} % of {:} cells in {:}.",
+            (100 * self.value_grid.len()) as f64 / total_cells as f64,
+            total_cells,
+            t.elapsed()
+        );
 
         self.compact_value_grid();
-        println!("compacted value_grid, now {:} % of {:} cells in {:}.",
-                 (100 * self.value_grid.len()) as f64 / total_cells as f64,
-                 total_cells,
-                 t.elapsed());
+        println!(
+            "compacted value_grid, now {:} % of {:} cells in {:}.",
+            (100 * self.value_grid.len()) as f64 / total_cells as f64,
+            total_cells,
+            t.elapsed()
+        );
 
         self.generate_edge_grid();
 
-        println!("generated edge_grid with {} edges: {:}",
-                 self.edge_grid.borrow().len(),
-                 t.elapsed());
+        println!(
+            "generated edge_grid with {} edges: {:}",
+            self.edge_grid.borrow().len(),
+            t.elapsed()
+        );
 
         let (leafs, index_map) = self.generate_leaf_vertices();
         self.vertex_index_map = index_map;
         self.vertex_octtree.push(leafs);
 
-        println!("generated {:?} leaf vertices: {:}",
-                 self.vertex_octtree[0].len(),
-                 t.elapsed());
+        println!(
+            "generated {:?} leaf vertices: {:}",
+            self.vertex_octtree[0].len(),
+            t.elapsed()
+        );
 
         loop {
             let next = subsample_octtree(self.vertex_octtree.last().unwrap());
@@ -503,23 +546,28 @@ impl ManifoldDualContouringImpl {
         }
         println!("generated quads: {:}", t.elapsed());
 
-        println!("computed mesh with {:?} faces.",
-                 self.mesh.borrow().faces.len());
+        println!(
+            "computed mesh with {:?} faces.",
+            self.mesh.borrow().faces.len()
+        );
 
         Ok(self.mesh.borrow().clone())
     }
 
-    fn sample_value_grid(&mut self,
-                         idx: Index,
-                         pos: Point,
-                         size: usize,
-                         val: Float)
-                         -> Option<DualContouringError> {
+    fn sample_value_grid(
+        &mut self,
+        idx: Index,
+        pos: Point,
+        size: usize,
+        val: Float,
+    ) -> Option<DualContouringError> {
         debug_assert!(size > 1);
         let mut midx = idx;
         let size = size / 2;
-        let vpos = [pos,
-                    pos + size as Float * Vector::new(self.res, self.res, self.res)];
+        let vpos = [
+            pos,
+            pos + size as Float * Vector::new(self.res, self.res, self.res),
+        ];
         let sub_cube_diagonal = size as Float * self.res * (3. as Float).sqrt();
 
         for z in 0..2 {
@@ -598,22 +646,25 @@ impl ManifoldDualContouringImpl {
                 let mut adjacent_idx = point_idx.clone();
                 adjacent_idx[edge as usize] += 1;
                 if let Some(&adjacent_value) = self.value_grid.get(&adjacent_idx) {
-                    let point_pos = self.origin +
-                                    self.res *
-                                    Vector::new(point_idx[0] as Float,
-                                                point_idx[1] as Float,
-                                                point_idx[2] as Float);
+                    let point_pos = self.origin
+                        + self.res
+                            * Vector::new(
+                                point_idx[0] as Float,
+                                point_idx[1] as Float,
+                                point_idx[2] as Float,
+                            );
                     let mut adjacent_pos = point_pos;
                     adjacent_pos[edge as usize] += self.res;
-                    if let Some(plane) = self.find_zero(point_pos,
-                                                        point_value,
-                                                        adjacent_pos,
-                                                        adjacent_value) {
-                        edge_grid.insert(EdgeIndex {
-                                             edge: edge,
-                                             index: point_idx,
-                                         },
-                                         plane);
+                    if let Some(plane) =
+                        self.find_zero(point_pos, point_value, adjacent_pos, adjacent_value)
+                    {
+                        edge_grid.insert(
+                            EdgeIndex {
+                                edge: edge,
+                                index: point_idx,
+                            },
+                            plane,
+                        );
                     }
                 }
             }
@@ -641,12 +692,14 @@ impl ManifoldDualContouringImpl {
             // Solve qef and store error.
             let mut qef = vertex.qef.borrow_mut();
             // Make sure we never solve a qef twice.
-            debug_assert!(qef.error.is_nan(),
-                          "found solved qef layer {:?} index {:?} {:?} parent: {:?}",
-                          layer,
-                          index_in_layer,
-                          vertex.index,
-                          vertex.parent);
+            debug_assert!(
+                qef.error.is_nan(),
+                "found solved qef layer {:?} index {:?} {:?} parent: {:?}",
+                layer,
+                index_in_layer,
+                vertex.index,
+                vertex.parent
+            );
             qef.solve();
             error = qef.error;
         }
@@ -705,10 +758,12 @@ impl ManifoldDualContouringImpl {
         }
         (vertices, index_map)
     }
-    fn add_vertices_for_minimal_egde(&self,
-                                     edge_index: &EdgeIndex,
-                                     vertices: &mut Vec<Vertex>,
-                                     index_map: &mut HashMap<VertexIndex, usize>) {
+    fn add_vertices_for_minimal_egde(
+        &self,
+        edge_index: &EdgeIndex,
+        vertices: &mut Vec<Vertex>,
+        index_map: &mut HashMap<VertexIndex, usize>,
+    ) {
         debug_assert!((edge_index.edge as usize) < 4);
         let cell_size = Vector::new(self.res, self.res, self.res);
         for &quad_egde in QUADS[edge_index.edge as usize].iter() {
@@ -719,55 +774,59 @@ impl ManifoldDualContouringImpl {
                 edges: edge_set,
                 index: idx,
             };
-            index_map
-                .entry(vertex_index)
-                .or_insert_with(|| {
-                    let mut neighbors = [Vec::new(), Vec::new(), Vec::new(), Vec::new(),
-                                         Vec::new(), Vec::new()];
-                    for i in 0..6 {
-                        if let Some(mut neighbor_index) = vertex_index.neighbor(i) {
-                            for edges in get_connected_edges_from_edge_set(neighbor_index.edges,
-                                                 self.bitset_for_cell(neighbor_index.index)) {
+            index_map.entry(vertex_index).or_insert_with(|| {
+                let mut neighbors = [
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                ];
+                for i in 0..6 {
+                    if let Some(mut neighbor_index) = vertex_index.neighbor(i) {
+                        for edges in get_connected_edges_from_edge_set(
+                            neighbor_index.edges,
+                            self.bitset_for_cell(neighbor_index.index),
+                        ) {
                             neighbor_index.edges = edges;
                             let idx = VarIndex::VertexIndex(neighbor_index);
                             if !neighbors[i].contains(&idx) {
                                 neighbors[i].push(idx);
                             }
                         }
-                        }
                     }
-                    let mut intersections = [0u32; 12];
-                    for edge in edge_set {
-                        intersections[edge] = 1;
-                    }
-                    let tangent_planes: Vec<_> = edge_set
-                        .into_iter()
-                        .map(|edge| {
-                                 self.get_edge_tangent_plane(&EdgeIndex {
-                                                                 edge: Edge::from_usize(edge),
-                                                                 index: idx,
-                                                             })
-                             })
-                        .collect();
-                    let cell_origin =
-                        self.origin +
-                        Vector::new(idx[0] as Float, idx[1] as Float, idx[2] as Float) * self.res;
-                    vertices.push(Vertex {
-                                      index: idx,
-                                      qef:
-                                          RefCell::new(qef::Qef::new(&tangent_planes,
-                                                                     BoundingBox::new(cell_origin,
-                                                                                      cell_origin +
-                                                                                      cell_size))),
-                                      neighbors: neighbors,
-                                      parent: Cell::new(None),
-                                      children: Vec::new(),
-                                      mesh_index: Cell::new(None),
-                                      edge_intersections: intersections,
-                                      euler_characteristic: 1,
-                                  });
-                    vertices.len() - 1
+                }
+                let mut intersections = [0u32; 12];
+                for edge in edge_set {
+                    intersections[edge] = 1;
+                }
+                let tangent_planes: Vec<_> = edge_set
+                    .into_iter()
+                    .map(|edge| {
+                        self.get_edge_tangent_plane(&EdgeIndex {
+                            edge: Edge::from_usize(edge),
+                            index: idx,
+                        })
+                    })
+                    .collect();
+                let cell_origin = self.origin
+                    + Vector::new(idx[0] as Float, idx[1] as Float, idx[2] as Float) * self.res;
+                vertices.push(Vertex {
+                    index: idx,
+                    qef: RefCell::new(qef::Qef::new(
+                        &tangent_planes,
+                        BoundingBox::new(cell_origin, cell_origin + cell_size),
+                    )),
+                    neighbors: neighbors,
+                    parent: Cell::new(None),
+                    children: Vec::new(),
+                    mesh_index: Cell::new(None),
+                    edge_intersections: intersections,
+                    euler_characteristic: 1,
                 });
+                vertices.len() - 1
+            });
         }
     }
 
@@ -775,9 +834,11 @@ impl ManifoldDualContouringImpl {
         if let Some(ref plane) = self.edge_grid.borrow().get(&edge_index.base()) {
             return *plane.clone();
         }
-        panic!("could not find edge_point: {:?} -> {:?}",
-               edge_index,
-               edge_index.base());
+        panic!(
+            "could not find edge_point: {:?} -> {:?}",
+            edge_index,
+            edge_index.base()
+        );
     }
 
     // Return the Point index (in self.mesh.vertices) the the point belonging to edge/idx.
@@ -800,9 +861,10 @@ impl ManifoldDualContouringImpl {
                 .unwrap();
             let ref next_vertex = self.vertex_octtree[octtree_layer + 1][next_index];
             let error = next_vertex.qef.borrow().error;
-            if (!error.is_nan() && error > (self.error)) ||
-               (octtree_layer == self.vertex_octtree.len() - 2) ||
-               !next_vertex.is_2manifold() {
+            if (!error.is_nan() && error > (self.error))
+                || (octtree_layer == self.vertex_octtree.len() - 2)
+                || !next_vertex.is_2manifold()
+            {
                 // Stop, if either the error is too large or we will reach the top.
                 break;
             }
@@ -859,10 +921,10 @@ impl ManifoldDualContouringImpl {
 
         let mut p = Vec::with_capacity(4);
         for &quad_egde in QUADS[edge_index.edge as usize].iter() {
-            let point_index =
-                self.lookup_cell_point(quad_egde,
-                                       neg_offset(edge_index.index,
-                                                  EDGE_OFFSET[quad_egde as usize]));
+            let point_index = self.lookup_cell_point(
+                quad_egde,
+                neg_offset(edge_index.index, EDGE_OFFSET[quad_egde as usize]),
+            );
             // Dedup points before insertion (two minimal vertices might end up in the same parent
             // vertex).
             if !p.contains(&point_index) {
@@ -904,10 +966,10 @@ impl ManifoldDualContouringImpl {
                 result = &b;
             }
             return Some(Plane {
-                            p: *result,
-                            // We need a precise normal here.
-                            n: normal_from_object(&*self.object, *result),
-                        });
+                p: *result,
+                // We need a precise normal here.
+                n: normal_from_object(&*self.object, *result),
+            });
         }
         // Linear interpolation of the zero crossing.
         let n = a + (b - a) * (av.abs() / (bv - av).abs());

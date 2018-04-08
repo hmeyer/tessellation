@@ -1,5 +1,5 @@
-use {Object, BoundingBox};
-use truescad_types::{Float, INFINITY, NEG_INFINITY, Point, Vector};
+use {BoundingBox, Object};
+use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 
 // A cylinder along the Z-Axis
@@ -12,10 +12,9 @@ pub struct Cylinder {
 impl Cylinder {
     pub fn new(r: Float) -> Box<Cylinder> {
         Box::new(Cylinder {
-                     radius: r,
-                     bbox: BoundingBox::new(Point::new(-r, -r, NEG_INFINITY),
-                                            Point::new(r, r, INFINITY)),
-                 })
+            radius: r,
+            bbox: BoundingBox::new(Point::new(-r, -r, NEG_INFINITY), Point::new(r, r, INFINITY)),
+        })
     }
 }
 
@@ -43,7 +42,7 @@ impl Object for Cylinder {
 pub struct Cone {
     slope: Float,
     distance_multiplier: Float,
-    offset: Float, // Offset the singularity from Z-zero
+    offset: Float,            // Offset the singularity from Z-zero
     normal_multiplier: Float, // muliplier for the normal caclulation
     bbox: BoundingBox,
 }
@@ -51,12 +50,12 @@ pub struct Cone {
 impl Cone {
     pub fn new(slope: Float, offset: Float) -> Box<Cone> {
         Box::new(Cone {
-                     slope: slope,
-                     distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
-                     offset: offset,
-                     normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
-                     bbox: BoundingBox::infinity(),
-                 })
+            slope: slope,
+            distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
+            offset: offset,
+            normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
+            bbox: BoundingBox::infinity(),
+        })
     }
 }
 

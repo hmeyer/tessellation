@@ -8,7 +8,7 @@ use alga::linear::Transformation;
 use rayon::prelude::*;
 use std::cmp;
 use truescad_primitive::Object;
-use truescad_types::{Float, Transform, Point, Ray, Vector};
+use truescad_types::{Float, Point, Ray, Transform, Vector};
 
 const EPSILON: Float = 0.003;
 const APPROX_SLACK: Float = 0.1;
@@ -56,12 +56,13 @@ impl Renderer {
         self.trans = self.trans.append_translation(&v);
     }
 
-    fn cast_ray(&self,
-                obj: &Box<Object>,
-                r: &Ray,
-                light_dir: &Vector,
-                origin_value: Float)
-                -> (usize, Float) {
+    fn cast_ray(
+        &self,
+        obj: &Box<Object>,
+        r: &Ray,
+        light_dir: &Vector,
+        origin_value: Float,
+    ) -> (usize, Float) {
         let mut cr = *r;
         let mut value = origin_value;
         let mut iter: usize = 0;
@@ -89,7 +90,6 @@ impl Renderer {
 
     pub fn draw_on_buf(&self, buf: &mut [u8], width: i32, height: i32) {
         if let Some(ref my_obj) = self.object {
-
             let object_width = self.object_width();
             let viewer_dist = FOCAL_FACTOR * object_width * 3.;
 
@@ -113,44 +113,43 @@ impl Renderer {
 
 
             let mut rows: Vec<_> = buf.chunks_mut((width * 4) as usize).enumerate().collect();
-            rows.par_iter_mut()
-                .for_each(|y_and_buf| {
-                    let y = y_and_buf.0 as i32;
-                    let row_buf = &mut y_and_buf.1;
-                    let dir_row = dir_front + dir_tb * ((y - h2) as Float * scale);
-                    let mut row_ray = ray;
-                    let mut index: usize = 0;
+            rows.par_iter_mut().for_each(|y_and_buf| {
+                let y = y_and_buf.0 as i32;
+                let row_buf = &mut y_and_buf.1;
+                let dir_row = dir_front + dir_tb * ((y - h2) as Float * scale);
+                let mut row_ray = ray;
+                let mut index: usize = 0;
 
-                    for x in 0..width {
-                        row_ray.dir = dir_row + dir_rl * ((x - w2) as Float * scale);
+                for x in 0..width {
+                    row_ray.dir = dir_row + dir_rl * ((x - w2) as Float * scale);
 
-                        let (i, v) = self.cast_ray(my_obj, &row_ray, &light_dir, origin_value);
+                    let (i, v) = self.cast_ray(my_obj, &row_ray, &light_dir, origin_value);
 
-                        let b = (255.0 * v * v) as u8;
+                    let b = (255.0 * v * v) as u8;
 
-                        row_buf[index] = i as u8;
-                        index += 1;
-                        row_buf[index] = b;
-                        index += 1;
-                        row_buf[index] = b;
-                        index += 1;
-                        index += 1;
-                    }
-                })
+                    row_buf[index] = i as u8;
+                    index += 1;
+                    row_buf[index] = b;
+                    index += 1;
+                    row_buf[index] = b;
+                    index += 1;
+                    index += 1;
+                }
+            })
         }
     }
 
     fn object_width(&self) -> Float {
         if let Some(ref my_obj) = self.object {
             return my_obj
-                       .bbox()
-                       .max
-                       .x
-                       .abs()
-                       .max(my_obj.bbox().min.x.abs())
-                       .max(my_obj.bbox().max.y.abs().max(my_obj.bbox().min.y.abs()))
-                       .max(my_obj.bbox().max.z.abs().max(my_obj.bbox().min.z.abs())) *
-                   2.;
+                .bbox()
+                .max
+                .x
+                .abs()
+                .max(my_obj.bbox().min.x.abs())
+                .max(my_obj.bbox().max.y.abs().max(my_obj.bbox().min.y.abs()))
+                .max(my_obj.bbox().max.z.abs().max(my_obj.bbox().min.z.abs()))
+                * 2.;
         }
         0.
     }

@@ -30,9 +30,6 @@ pub struct Ray {
 
 impl Ray {
     pub fn new(o: Point, d: Vector) -> Ray {
-        Ray {
-            origin: o,
-            dir: d,
-        }
+        Ray { origin: o, dir: d }
     }
 }

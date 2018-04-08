@@ -1,16 +1,16 @@
-extern crate nalgebra as na;
+extern crate alga;
 #[cfg(not(test))]
 extern crate approx;
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
-extern crate alga;
-extern crate truescad_types;
-extern crate truescad_bbox;
+extern crate nalgebra as na;
 extern crate stl_io;
+extern crate truescad_bbox;
+extern crate truescad_types;
 use std::fmt::Debug;
+pub use truescad_bbox::BoundingBox;
 pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
-pub use truescad_bbox::{BoundingBox};
 
 mod transformer;
 pub use self::transformer::AffineTransformer;
@@ -22,7 +22,7 @@ mod bender;
 pub use self::bender::Bender;
 
 mod boolean;
-pub use self::boolean::{Union, Intersection};
+pub use self::boolean::{Intersection, Union};
 
 mod sphere;
 pub use self::sphere::Sphere;
@@ -83,7 +83,8 @@ pub trait ObjectClone {
 }
 
 impl<T> ObjectClone for T
-    where T: 'static + Object + Clone
+where
+    T: 'static + Object + Clone,
 {
     fn clone_box(&self) -> Box<Object> {
         Box::new(self.clone())

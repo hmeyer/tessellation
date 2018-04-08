@@ -1,9 +1,9 @@
 extern crate alga;
-extern crate truescad_types;
 extern crate nalgebra as na;
+extern crate truescad_types;
 
 use alga::linear::Transformation;
-use truescad_types::{Float, INFINITY, Transform, NEG_INFINITY};
+use truescad_types::{Float, Transform, INFINITY, NEG_INFINITY};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BoundingBox {
@@ -35,14 +35,14 @@ fn point_max(p: &[na::Point3<Float>]) -> na::Point3<Float> {
 impl BoundingBox {
     pub fn infinity() -> BoundingBox {
         BoundingBox {
-            min: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY,NEG_INFINITY),
+            min: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY, NEG_INFINITY),
             max: na::Point3::<Float>::new(INFINITY, INFINITY, INFINITY),
         }
     }
     pub fn neg_infinity() -> BoundingBox {
         BoundingBox {
             min: na::Point3::<Float>::new(INFINITY, INFINITY, INFINITY),
-            max: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY,NEG_INFINITY),
+            max: na::Point3::<Float>::new(NEG_INFINITY, NEG_INFINITY, NEG_INFINITY),
         }
     }
     pub fn new(min: na::Point3<Float>, max: na::Point3<Float>) -> BoundingBox {
@@ -63,14 +63,16 @@ impl BoundingBox {
     pub fn transform(&self, mat: &Transform) -> BoundingBox {
         let a = &self.min;
         let b = &self.max;
-        let corners = [mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, a.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, b.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, a.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, b.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, a.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, b.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, a.z)),
-                       mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, b.z))];
+        let corners = [
+            mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, a.z)),
+            mat.transform_point(&na::Point3::<Float>::new(a.x, a.y, b.z)),
+            mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, a.z)),
+            mat.transform_point(&na::Point3::<Float>::new(a.x, b.y, b.z)),
+            mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, a.z)),
+            mat.transform_point(&na::Point3::<Float>::new(b.x, a.y, b.z)),
+            mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, a.z)),
+            mat.transform_point(&na::Point3::<Float>::new(b.x, b.y, b.z)),
+        ];
         BoundingBox {
             min: point_min(&corners),
             max: point_max(&corners),
@@ -101,7 +103,7 @@ impl BoundingBox {
         xval.max(yval.max(zval))
     }
     pub fn contains(&self, p: na::Point3<Float>) -> bool {
-        p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y &&
-        p.z >= self.min.z && p.z <= self.max.z
+        p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y
+            && p.z >= self.min.z && p.z <= self.max.z
     }
 }

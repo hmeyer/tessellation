@@ -30,9 +30,9 @@ pub fn create_window() -> ::gtk::Window {
     window.set_default_size(640, 480);
 
     window.connect_delete_event(|_, _| {
-                                    ::gtk::main_quit();
-                                    Inhibit(false)
-                                });
+        ::gtk::main_quit();
+        Inhibit(false)
+    });
 
     let v_box = ::gtk::Box::new(::gtk::Orientation::Vertical, 0);
     let debug_scrolled_window = ::gtk::ScrolledWindow::new(None, None);
@@ -49,17 +49,18 @@ pub fn create_window() -> ::gtk::Window {
 
     let filename = Rc::new(RefCell::new(String::new()));
 
-    let menu = menu::create_menu(clone!(editor; || {
+    let menu = menu::create_menu(
+        clone!(editor; || {
                                      editor.tessellate();
                                  }),
-                                 clone!(window, editor, filename; || {
+        clone!(window, editor, filename; || {
                                      if let Some(path_str) = get_open_name(Some(&window)) {
                                          let mut f = filename.borrow_mut();
                                          *f = path_str;
                                          editor.open(&*f);
                                      }
                                  }),
-                                 clone!(window, editor, filename; || {
+        clone!(window, editor, filename; || {
                                      let mut f = filename.borrow_mut();
                                      if f.is_empty() {
                                          if let Some(path) = get_save_name(Some(&window),
@@ -71,7 +72,7 @@ pub fn create_window() -> ::gtk::Window {
                                          editor.save(&*f);
                                      }
                                  }),
-                                 clone!(window, editor, filename; || {
+        clone!(window, editor, filename; || {
                                      if let Some(path) = get_save_name(Some(&window),
                                                                        "*.lua") {
                                          let mut f = filename.borrow_mut();
@@ -79,8 +80,8 @@ pub fn create_window() -> ::gtk::Window {
                                          editor.save(&*f);
                                      }
                                  }),
-                                 clone!(window; || settings::show_settings_dialog(Some(&window))),
-                                 clone!(window, editor; || {
+        clone!(window; || settings::show_settings_dialog(Some(&window))),
+        clone!(window, editor; || {
                                      let maybe_mesh = editor.tessellate();
                                      if let Some(mesh) = maybe_mesh {
                                          if let Some(path) = get_save_name(Some(&window),
@@ -104,7 +105,8 @@ pub fn create_window() -> ::gtk::Window {
                                          }
                                      }
                                  }),
-                                 || ::gtk::main_quit());
+        || ::gtk::main_quit(),
+    );
 
     let v_pane = ::gtk::Paned::new(::gtk::Orientation::Vertical);
     v_pane.set_border_width(5);
@@ -121,7 +123,6 @@ pub fn create_window() -> ::gtk::Window {
     h_pane.set_position(h_pane.get_allocated_width() * 50 / 100);
 
     return window;
-
 }
 
 fn get_open_name<T: ::gtk::IsA<::gtk::Window>>(parent: Option<&T>) -> Option<String> {
@@ -145,12 +146,15 @@ fn get_open_name<T: ::gtk::IsA<::gtk::Window>>(parent: Option<&T>) -> Option<Str
     None
 }
 
-fn get_save_name<T: ::gtk::IsA<::gtk::Window>>(parent: Option<&T>,
-                                               pattern: &str)
-                                               -> Option<String> {
-    let dialog = FileChooserDialog::new(Some("Choose a filename to Save"),
-                                        parent,
-                                        FileChooserAction::Save);
+fn get_save_name<T: ::gtk::IsA<::gtk::Window>>(
+    parent: Option<&T>,
+    pattern: &str,
+) -> Option<String> {
+    let dialog = FileChooserDialog::new(
+        Some("Choose a filename to Save"),
+        parent,
+        FileChooserAction::Save,
+    );
     dialog.add_button("Save", ResponseType::Ok.into());
     dialog.add_button("Cancel", ResponseType::Cancel.into());
     let filter = FileFilter::new();

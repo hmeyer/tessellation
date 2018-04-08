@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate hlua;
 
-extern crate truescad_types;
 extern crate truescad_primitive;
+extern crate truescad_types;
 
 pub mod lobject;
 pub mod lobject_vector;

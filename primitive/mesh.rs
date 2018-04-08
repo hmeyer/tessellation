@@ -1,6 +1,6 @@
-use {Object, BoundingBox, normal_from_object};
+use {normal_from_object, BoundingBox, Object};
 use approx::ApproxEq;
-use truescad_types::{Float, Point, INFINITY, Vector};
+use truescad_types::{Float, Point, Vector, INFINITY};
 
 #[derive(Clone, Debug, PartialEq)]
 struct Face {
@@ -42,25 +42,33 @@ impl Mesh {
             .collect::<Vec<_>>();
         let bbox = bbox_for_mesh(&mesh);
         Ok(Box::new(Mesh {
-                        bbox: bbox,
-                        vertices: vertices,
-                        faces: faces,
-                    }))
+            bbox: bbox,
+            vertices: vertices,
+            faces: faces,
+        }))
     }
     fn value(&self, p: Point) -> Float {
         let p = Vector::new(p.x, p.y, p.z);
         let value_and_acos = self.faces
             .iter()
             .fold((INFINITY, 0.0 as Float), |min_and_acos, f| {
-                let current_and_acos = distance_point_face([&self.vertices[f.vertices[0]], &self.vertices[f.vertices[1]], &self.vertices[f.vertices[2]]], &f.normal, &p);
-                if current_and_acos
-                       .0
-                       .relative_eq(&min_and_acos.0,
-                                    Float::default_epsilon(),
-                                    Float::default_max_relative()) {
+                let current_and_acos = distance_point_face(
+                    [
+                        &self.vertices[f.vertices[0]],
+                        &self.vertices[f.vertices[1]],
+                        &self.vertices[f.vertices[2]],
+                    ],
+                    &f.normal,
+                    &p,
+                );
+                if current_and_acos.0.relative_eq(
+                    &min_and_acos.0,
+                    Float::default_epsilon(),
+                    Float::default_max_relative(),
+                ) {
                     // current_and_acos.0 == min_and_acos.0
                     let mut best_acos: Float = min_and_acos.1;
-                    if current_and_acos.1.abs() >  best_acos.abs() {
+                    if current_and_acos.1.abs() > best_acos.abs() {
                         best_acos = current_and_acos.1;
                     }
                     return (min_and_acos.0, best_acos);
@@ -89,12 +97,13 @@ fn point_over_line(a: &Vector, b: &Vector, p: &Vector) -> Option<Vector> {
 // Project p onto plane of triangle. Return None, if the projection would not fall into the
 // triangle.
 // Triangle is defined via points a,b,c and normal n.
-fn point_over_triangle(a: &Vector,
-                       b: &Vector,
-                       c: &Vector,
-                       n: &Vector,
-                       p: &Vector)
-                       -> Option<Vector> {
+fn point_over_triangle(
+    a: &Vector,
+    b: &Vector,
+    c: &Vector,
+    n: &Vector,
+    p: &Vector,
+) -> Option<Vector> {
     let proj = p - (p - a).dot(n) * n;
 
     // The vector ab and bc span the triangle.
@@ -159,57 +168,57 @@ fn vector_direction(a: &Vector, b: &Vector) -> Float {
 // Returns the distance between p and the triangle face (first value).
 // The second value is the acos of the angle between the normal of face and the line from p to
 //  the closest point of face.
-fn distance_point_face(face: [&Vector;3],
-                       n: &Vector,
-                       p: &Vector) -> (Float, Float) {
-    if let Some(proj) = point_over_triangle(face[0],
-                                            face[1],
-                                            face[2],
-                                            n,
-                                            p) {
+fn distance_point_face(face: [&Vector; 3], n: &Vector, p: &Vector) -> (Float, Float) {
+    if let Some(proj) = point_over_triangle(face[0], face[1], face[2], n, p) {
         let delta = p - proj;
         return (delta.norm(), vector_direction(&delta, n));
     }
 
     // Iterate over all edges to find any closest projection.
-    let mut closest_point_and_dist = [(face[0], face[1]),
-                                      (face[1], face[2]),
-                                      (face[2], face[0])]
+    let mut closest_point_and_dist = [(face[0], face[1]), (face[1], face[2]), (face[2], face[0])]
         .iter()
-        .fold((Vector::new(0.,0.,0.), INFINITY), |best_point_and_dist, line| {
-            let optional_point = point_over_line(line.0, line.1, &p);
-            if let Some(ref pp) = optional_point {
-                let vector_to_egde = p - pp;
-                let current_dist = vector_to_egde.norm();
-                if current_dist < best_point_and_dist.1 {
-                    return (*pp, current_dist);
+        .fold(
+            (Vector::new(0., 0., 0.), INFINITY),
+            |best_point_and_dist, line| {
+                let optional_point = point_over_line(line.0, line.1, &p);
+                if let Some(ref pp) = optional_point {
+                    let vector_to_egde = p - pp;
+                    let current_dist = vector_to_egde.norm();
+                    if current_dist < best_point_and_dist.1 {
+                        return (*pp, current_dist);
+                    }
                 }
-            }
-            return best_point_and_dist;
-        });
+                return best_point_and_dist;
+            },
+        );
 
     // Now also iterate over all vertices to find a point that might even be closer.
-    closest_point_and_dist=  face.iter()
-               .fold(closest_point_and_dist, |best_point_and_dist, vertex| {
-        let vector_to_vertex = p - *vertex;
-        let current_dist = vector_to_vertex.norm();
-        if current_dist < best_point_and_dist.1 {
-            return (**vertex, current_dist);
-        }
-        return best_point_and_dist;
-    });
+    closest_point_and_dist =
+        face.iter()
+            .fold(closest_point_and_dist, |best_point_and_dist, vertex| {
+                let vector_to_vertex = p - *vertex;
+                let current_dist = vector_to_vertex.norm();
+                if current_dist < best_point_and_dist.1 {
+                    return (**vertex, current_dist);
+                }
+                return best_point_and_dist;
+            });
 
     assert!(closest_point_and_dist.1 < INFINITY);
 
     let vector_to_point = p - closest_point_and_dist.0;
-    return (closest_point_and_dist.1, vector_to_point.dot(n) / closest_point_and_dist.1);
+    return (
+        closest_point_and_dist.1,
+        vector_to_point.dot(n) / closest_point_and_dist.1,
+    );
 }
 
 fn bbox_for_mesh(mesh: &::stl_io::IndexedMesh) -> BoundingBox {
     mesh.vertices
         .iter()
-        .fold(BoundingBox::neg_infinity(),
-              |bbox, v| bbox.insert(Point::new(v[0] as Float, v[1] as Float, v[2] as Float)))
+        .fold(BoundingBox::neg_infinity(), |bbox, v| {
+            bbox.insert(Point::new(v[0] as Float, v[1] as Float, v[2] as Float))
+        })
 }
 
 impl Object for Mesh {
@@ -232,8 +241,8 @@ impl Object for Mesh {
 #[cfg(test)]
 mod test {
     use super::*;
-    use truescad_types::PI;
     use INFINITY_BOX;
+    use truescad_types::PI;
 
     #[test]
     fn test_point_over_line() {
@@ -248,20 +257,38 @@ mod test {
 
     #[test]
     fn test_point_over_triangle() {
-        let a = Vector::new(0.,  0.,  10.);
-        let b = Vector::new(0.,  0., -10.);
-        let c = Vector::new(0., 10.,   0.);
+        let a = Vector::new(0., 0., 10.);
+        let b = Vector::new(0., 0., -10.);
+        let c = Vector::new(0., 10., 0.);
         let n = Vector::new(-1., 0., 0.);
         assert_eq!(point_over_triangle(&a, &b, &c, &n, &a), Some(a.clone()));
         assert_eq!(point_over_triangle(&a, &b, &c, &n, &b), Some(b.clone()));
         assert_eq!(point_over_triangle(&a, &b, &c, &n, &c), Some(c.clone()));
 
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new( 5.,  1., 0.)), Some(Vector::new(0., 1., 0.)));
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new(-5.,  1., 0.)), Some(Vector::new(0., 1., 0.)));
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new( 5.,  0., 0.)), Some(Vector::new(0., 0., 0.)));
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new(-5.,  0., 0.)), Some(Vector::new(0., 0., 0.)));
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new( 5., -1., 0.)), None);
-        assert_eq!(point_over_triangle(&a, &b, &c, &n, &Vector::new(-5., -1., 0.)), None);
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(5., 1., 0.)),
+            Some(Vector::new(0., 1., 0.))
+        );
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(-5., 1., 0.)),
+            Some(Vector::new(0., 1., 0.))
+        );
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(5., 0., 0.)),
+            Some(Vector::new(0., 0., 0.))
+        );
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(-5., 0., 0.)),
+            Some(Vector::new(0., 0., 0.))
+        );
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(5., -1., 0.)),
+            None
+        );
+        assert_eq!(
+            point_over_triangle(&a, &b, &c, &n, &Vector::new(-5., -1., 0.)),
+            None
+        );
     }
 
     #[test]
@@ -274,15 +301,24 @@ mod test {
         assert_eq!(distance_point_face(face.clone(), &n, &a), (0., 1.));
         assert_eq!(distance_point_face(face.clone(), &n, &b), (0., 1.));
         assert_eq!(distance_point_face(face.clone(), &n, &c), (0., 1.));
-        assert_eq!(distance_point_face(face.clone(), &n, &Vector::new(-10., 0., 0.)), (10., 0.));
-        assert_eq!(distance_point_face(face.clone(), &n, &Vector::new(1., 1., 10.)), (10., 1.));
-        assert_eq!(distance_point_face(face.clone(), &n, &Vector::new(1., 1., -10.)), (10., -1.));
+        assert_eq!(
+            distance_point_face(face.clone(), &n, &Vector::new(-10., 0., 0.)),
+            (10., 0.)
+        );
+        assert_eq!(
+            distance_point_face(face.clone(), &n, &Vector::new(1., 1., 10.)),
+            (10., 1.)
+        );
+        assert_eq!(
+            distance_point_face(face.clone(), &n, &Vector::new(1., 1., -10.)),
+            (10., -1.)
+        );
 
         assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., 10.)).0 > 10.);
-        assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., 10.)).1 >  0.);
+        assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., 10.)).1 > 0.);
 
         assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., -10.)).0 > 10.);
-        assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., -10.)).1 <  0.);
+        assert!(distance_point_face(face.clone(), &n, &Vector::new(-1., -1., -10.)).1 < 0.);
     }
 
     #[test]
@@ -310,7 +346,7 @@ mod test {
     fn test_distance_point_face_by_halfcircle_around_face_point() {
         let a = Vector::new(0., -1., 1.);
         let b = Vector::new(0., -1., -1.);
-        let c = Vector::new(0.,  0., 0.);
+        let c = Vector::new(0., 0., 0.);
         let face = [&a, &b, &c];
         let n = Vector::new(-1., 0., 0.);
 
@@ -329,25 +365,42 @@ mod test {
 
     #[test]
     fn test_2face_edge() {
-        let convex_mesh = Mesh { bbox: INFINITY_BOX.clone(), vertices: vec![
-            Vector::new(   0.,   0.,  100.),
-            Vector::new(   0.,   0., -100.),
-            Vector::new( 100.,-100.,    0.),
-            Vector::new(-100.,-100.,    0.)], faces: vec![
-            Face { normal: Vector::new( 1., 1., 0.).normalize(), vertices: [0, 1, 2] },
-            Face { normal: Vector::new(-1., 1., 0.).normalize(), vertices: [1, 0, 3] }
-            ]};
+        let convex_mesh = Mesh {
+            bbox: INFINITY_BOX.clone(),
+            vertices: vec![
+                Vector::new(0., 0., 100.),
+                Vector::new(0., 0., -100.),
+                Vector::new(100., -100., 0.),
+                Vector::new(-100., -100., 0.),
+            ],
+            faces: vec![
+                Face {
+                    normal: Vector::new(1., 1., 0.).normalize(),
+                    vertices: [0, 1, 2],
+                },
+                Face {
+                    normal: Vector::new(-1., 1., 0.).normalize(),
+                    vertices: [1, 0, 3],
+                },
+            ],
+        };
         let mut concave_mesh = convex_mesh.clone();
         concave_mesh.faces = vec![
-            Face { normal: Vector::new(-1.,-1., 0.).normalize(), vertices: [0, 2, 1] },
-            Face { normal: Vector::new( 1.,-1., 0.).normalize(), vertices: [1, 3, 0] }
-            ];
+            Face {
+                normal: Vector::new(-1., -1., 0.).normalize(),
+                vertices: [0, 2, 1],
+            },
+            Face {
+                normal: Vector::new(1., -1., 0.).normalize(),
+                vertices: [1, 3, 0],
+            },
+        ];
         let steps = 10;
         for i in 0..steps {
             for &(mesh, sign) in [(&convex_mesh, 1.), (&concave_mesh, -1.)].iter() {
                 let x = i as f64 / steps as f64;
 
-                let outside1 = Point::new( x, 0., 0.);
+                let outside1 = Point::new(x, 0., 0.);
                 let outside2 = Point::new(-x, 0., 0.);
 
                 let expected_outside_dist = sign * x / 2f64.sqrt();
@@ -356,11 +409,11 @@ mod test {
                 assert_ulps_eq!(mesh.approx_value(outside2, 0.), expected_outside_dist);
 
 
-                let infront = Point::new(0.5-x, 1., 0.);
-                let infront_dist = sign * Vector::new(0.5-x, 1., 0.).norm();
+                let infront = Point::new(0.5 - x, 1., 0.);
+                let infront_dist = sign * Vector::new(0.5 - x, 1., 0.).norm();
                 assert_ulps_eq!(mesh.approx_value(infront, 0.), infront_dist);
 
-                let inside1 = Point::new( 1.0 - x, -1.0 - x, 0.);
+                let inside1 = Point::new(1.0 - x, -1.0 - x, 0.);
                 let inside2 = Point::new(-1.0 + x, -1.0 - x, 0.);
 
                 let expected_inside_dist = sign * -x * 2f64.sqrt();
@@ -373,20 +426,31 @@ mod test {
 
     #[test]
     fn test_2face_convex_vertex() {
-        let mesh = Mesh { bbox: INFINITY_BOX.clone(), vertices: vec![
-            Vector::new(   0.,   0.,    0.),
-            Vector::new( 100.,-100., -100.),
-            Vector::new( 100.,-100.,  100.),
-            Vector::new(-100.,-100., -100.),
-            Vector::new(-100.,-100.,  100.)], faces: vec![
-            Face { normal: Vector::new( 1., 1., 0.).normalize(), vertices: [0, 1, 2] },
-            Face { normal: Vector::new(-1., 1., 0.).normalize(), vertices: [0, 4, 3] }
-            ]};
+        let mesh = Mesh {
+            bbox: INFINITY_BOX.clone(),
+            vertices: vec![
+                Vector::new(0., 0., 0.),
+                Vector::new(100., -100., -100.),
+                Vector::new(100., -100., 100.),
+                Vector::new(-100., -100., -100.),
+                Vector::new(-100., -100., 100.),
+            ],
+            faces: vec![
+                Face {
+                    normal: Vector::new(1., 1., 0.).normalize(),
+                    vertices: [0, 1, 2],
+                },
+                Face {
+                    normal: Vector::new(-1., 1., 0.).normalize(),
+                    vertices: [0, 4, 3],
+                },
+            ],
+        };
         let steps = 10;
         for i in 0..steps {
             let x = i as f64 / steps as f64;
 
-            let p1 = Point::new( x, 0., 0.);
+            let p1 = Point::new(x, 0., 0.);
             let p2 = Point::new(-x, 0., 0.);
 
             let expected_dist = x / 2f64.sqrt();
@@ -398,20 +462,31 @@ mod test {
 
     #[test]
     fn test_2face_concave_vertex() {
-        let mesh = Mesh { bbox: INFINITY_BOX.clone(), vertices: vec![
-            Vector::new(   0.,   0.,    0.),
-            Vector::new( 100., 100.,  100.),
-            Vector::new( 100., 100., -100.),
-            Vector::new(-100., 100.,  100.),
-            Vector::new(-100., 100., -100.)], faces: vec![
-            Face { normal: Vector::new(-1., 1., 0.).normalize(), vertices: [0, 1, 2] },
-            Face { normal: Vector::new( 1., 1., 0.).normalize(), vertices: [0, 4, 3] }
-            ]};
+        let mesh = Mesh {
+            bbox: INFINITY_BOX.clone(),
+            vertices: vec![
+                Vector::new(0., 0., 0.),
+                Vector::new(100., 100., 100.),
+                Vector::new(100., 100., -100.),
+                Vector::new(-100., 100., 100.),
+                Vector::new(-100., 100., -100.),
+            ],
+            faces: vec![
+                Face {
+                    normal: Vector::new(-1., 1., 0.).normalize(),
+                    vertices: [0, 1, 2],
+                },
+                Face {
+                    normal: Vector::new(1., 1., 0.).normalize(),
+                    vertices: [0, 4, 3],
+                },
+            ],
+        };
         let steps = 10;
         for i in 0..steps {
             let x = i as f64 / steps as f64;
 
-            let p1 = Point::new( x, 2. - x, 0.);
+            let p1 = Point::new(x, 2. - x, 0.);
             let p2 = Point::new(-x, 2. - x, 0.);
 
             let expected_dist = (1.0 - x) * 2f64.sqrt();

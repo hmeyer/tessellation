@@ -69,9 +69,9 @@ impl VertexIndex {
             neighbor_index = neg_offset(self.index, off);
         }
         Some(VertexIndex {
-                 edges: neighbor_edge_set,
-                 index: neighbor_index,
-             })
+            edges: neighbor_edge_set,
+            index: neighbor_index,
+        })
     }
 }
 
@@ -83,7 +83,7 @@ pub enum VarIndex {
 
 #[cfg(test)]
 mod tests {
-    use super::{EDGES_ON_FACE, VertexIndex};
+    use super::{VertexIndex, EDGES_ON_FACE};
     use super::super::bitset::BitSet;
 
     #[test]

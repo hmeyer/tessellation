@@ -1,6 +1,6 @@
-use {Object, PrimitiveParameters, BoundingBox};
+use {BoundingBox, Object, PrimitiveParameters};
 use alga::linear::Similarity;
-use truescad_types::{Float, PI, Point, Vector};
+use truescad_types::{Float, Point, Vector, PI};
 
 #[derive(Clone, Debug)]
 pub struct Bender {
@@ -52,13 +52,15 @@ impl Object for Bender {
 impl Bender {
     // o: Object to be twisted, w: width (x) for one full rotation
     pub fn new(o: Box<Object>, w: Float) -> Box<Bender> {
-        let bbox = BoundingBox::new(Point::new(-o.bbox().max.y, -o.bbox().max.y, o.bbox().min.z),
-                                    Point::new(o.bbox().max.y, o.bbox().max.y, o.bbox().max.z));
+        let bbox = BoundingBox::new(
+            Point::new(-o.bbox().max.y, -o.bbox().max.y, o.bbox().min.z),
+            Point::new(o.bbox().max.y, o.bbox().max.y, o.bbox().max.z),
+        );
         Box::new(Bender {
-                     object: o,
-                     width_scaler: w / (2. * PI),
-                     bbox: bbox,
-                 })
+            object: o,
+            width_scaler: w / (2. * PI),
+            bbox: bbox,
+        })
     }
     fn to_polar(&self, p: Point) -> Point {
         let phi = p.x.atan2(-p.y);

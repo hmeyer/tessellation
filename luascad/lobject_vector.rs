@@ -16,10 +16,12 @@ pub struct LObjectVector {
 implement_lua_push!(LObjectVector, |mut metatable| {
     // we create a `__index` entry in the metatable
     let mut index = metatable.empty_array("__index");
-    index.set("push",
-              ::hlua::function2(|v: &mut LObjectVector, o: &mut LObject| {
-                                    v.push(o.into_object());
-                                }));
+    index.set(
+        "push",
+        ::hlua::function2(|v: &mut LObjectVector, o: &mut LObject| {
+            v.push(o.into_object());
+        }),
+    );
 });
 
 // this macro implements the require traits so that we can *read* the object back
@@ -28,43 +30,57 @@ implement_lua_read!(LObjectVector);
 
 impl LObjectVector {
     pub fn new(o: Option<Box<Object>>) -> LObjectVector {
-        LObjectVector { v: if let Some(o) = o { Some(vec![o]) } else { None } }
+        LObjectVector {
+            v: if let Some(o) = o { Some(vec![o]) } else { None },
+        }
     }
     pub fn export_factories(lua: &mut hlua::Lua, env_name: &str) {
-        lua.set("__new_object_vector",
-                hlua::function1(|o: &LObject| LObjectVector::new(o.into_object())));
-        lua.set("__new_union",
-                hlua::function2(|o: &LObjectVector, smooth: Float| {
-            LObject {
-                o: if let Some(ref v) = o.v {
-                    Some(Union::from_vec(v.clone(), smooth).unwrap() as Box<Object>)
-                } else {
-                    None
-                },
-            }
-        }));
-        lua.set("__new_intersection",
-                hlua::function2(|o: &LObjectVector, smooth: Float| {
-            LObject {
-                o: if let Some(ref v) = o.v {
-                    Some(Intersection::from_vec(v.clone(), smooth).unwrap() as Box<Object>)
-                } else {
-                    None
-                },
-            }
-        }));
-        lua.set("__new_difference",
-                hlua::function2(|o: &LObjectVector, smooth: Float| {
-            LObject {
-                o: if let Some(ref v) = o.v {
-                    Some(Intersection::difference_from_vec(v.clone(), smooth).unwrap() as
-                         Box<Object>)
-                } else {
-                    None
-                },
-            }
-        }));
-        lua.execute::<()>(&format!("
+        lua.set(
+            "__new_object_vector",
+            hlua::function1(|o: &LObject| LObjectVector::new(o.into_object())),
+        );
+        lua.set(
+            "__new_union",
+            hlua::function2(|o: &LObjectVector, smooth: Float| {
+                LObject {
+                    o: if let Some(ref v) = o.v {
+                        Some(Union::from_vec(v.clone(), smooth).unwrap() as Box<Object>)
+                    } else {
+                        None
+                    },
+                }
+            }),
+        );
+        lua.set(
+            "__new_intersection",
+            hlua::function2(|o: &LObjectVector, smooth: Float| {
+                LObject {
+                    o: if let Some(ref v) = o.v {
+                        Some(Intersection::from_vec(v.clone(), smooth).unwrap()
+                            as Box<Object>)
+                    } else {
+                        None
+                    },
+                }
+            }),
+        );
+        lua.set(
+            "__new_difference",
+            hlua::function2(|o: &LObjectVector, smooth: Float| {
+                LObject {
+                    o: if let Some(ref v) = o.v {
+                        Some(
+                            Intersection::difference_from_vec(v.clone(), smooth).unwrap()
+                                as Box<Object>,
+                        )
+                    } else {
+                        None
+                    },
+                }
+            }),
+        );
+        lua.execute::<()>(&format!(
+            "
             function __array_to_ov(lobjects)
               ov = __new_object_vector(lobjects[1])
               for i = 2, #lobjects do
@@ -91,8 +107,8 @@ impl LObjectVector {
             {env}.Union = Union;
             {env}.Intersection = Intersection;
             {env}.Difference = Difference;",
-                                    env = env_name))
-            .unwrap();
+            env = env_name
+        )).unwrap();
     }
     pub fn push(&mut self, o: Option<Box<Object>>) {
         if let Some(o) = o {
