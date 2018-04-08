@@ -5,6 +5,7 @@ extern crate nalgebra as na;
 extern crate rand;
 extern crate rayon;
 extern crate time;
+extern crate truescad_bbox;
 extern crate truescad_primitive;
 extern crate truescad_types;
 

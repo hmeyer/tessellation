@@ -1,6 +1,6 @@
 use Plane;
 use na;
-use truescad_primitive::BoundingBox;
+use truescad_bbox::BoundingBox;
 use truescad_types::{Float, Point, EPSILON, NAN};
 
 // Quadratic error function

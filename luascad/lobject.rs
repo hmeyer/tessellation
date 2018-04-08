@@ -1,7 +1,8 @@
 use hlua;
 use std::sync::mpsc;
-use truescad_primitive::{Bender, BoundingBox, Cone, Cylinder, Intersection, Mesh, Object, SlabZ,
-                         Sphere, Twister};
+use truescad_bbox::BoundingBox;
+use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Mesh, Object, SlabZ, Sphere,
+                         Twister};
 use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 #[derive(Clone, Debug)]

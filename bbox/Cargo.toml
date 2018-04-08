@@ -1,6 +1,6 @@
 [package]
 name = "truescad_bbox"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]

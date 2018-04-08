@@ -9,7 +9,7 @@ extern crate stl_io;
 extern crate truescad_bbox;
 extern crate truescad_types;
 use std::fmt::Debug;
-pub use truescad_bbox::BoundingBox;
+use truescad_bbox::BoundingBox;
 pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
 
 mod transformer;
