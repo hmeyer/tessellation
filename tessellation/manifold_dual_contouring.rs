@@ -8,7 +8,7 @@ use std::{error, fmt};
 use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
-use truescad_primitive::{BoundingBox, NEG_INFINITY_BOX, Object, normal_from_object};
+use truescad_primitive::{BoundingBox, Object, normal_from_object};
 use truescad_types;
 use truescad_types::{Float, Point, Vector};
 use vertex_index::{EDGES_ON_FACE, Index, VarIndex, VertexIndex, neg_offset, offset};
@@ -335,7 +335,7 @@ pub fn subsample_octtree(base: &Vec<Vertex>) -> Vec<Vertex> {
             let (intersections, euler) = subsample_euler_characteristics(&neighbor_set, base);
             let mut parent = Vertex {
                 index: half_index(&vertex.index),
-                qef: RefCell::new(qef::Qef::new(&[], NEG_INFINITY_BOX.clone())),
+                qef: RefCell::new(qef::Qef::new(&[], BoundingBox::neg_infinity())),
                 neighbors: [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()],
                 parent: Cell::new(None),
                 children: Vec::new(),

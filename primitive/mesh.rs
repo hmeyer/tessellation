@@ -1,6 +1,5 @@
-use {Object, normal_from_object};
+use {Object, BoundingBox, normal_from_object};
 use approx::ApproxEq;
-use bounding_box::BoundingBox;
 use truescad_types::{Float, Point, INFINITY, Vector};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -209,7 +208,7 @@ fn distance_point_face(face: [&Vector;3],
 fn bbox_for_mesh(mesh: &::stl_io::IndexedMesh) -> BoundingBox {
     mesh.vertices
         .iter()
-        .fold(::bounding_box::NEG_INFINITY_BOX.clone(),
+        .fold(BoundingBox::neg_infinity(),
               |bbox, v| bbox.insert(Point::new(v[0] as Float, v[1] as Float, v[2] as Float)))
 }
 
@@ -234,7 +233,7 @@ impl Object for Mesh {
 mod test {
     use super::*;
     use truescad_types::PI;
-    use bounding_box::INFINITY_BOX;
+    use INFINITY_BOX;
 
     #[test]
     fn test_point_over_line() {

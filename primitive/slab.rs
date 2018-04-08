@@ -1,5 +1,4 @@
-use Object;
-use bounding_box::BoundingBox;
+use {Object, BoundingBox};
 use truescad_types::{Float, INFINITY, NEG_INFINITY, Point, Vector};
 
 #[derive(Clone, Debug, PartialEq)]

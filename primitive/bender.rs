@@ -1,6 +1,5 @@
-use {Object, PrimitiveParameters};
+use {Object, PrimitiveParameters, BoundingBox};
 use alga::linear::Similarity;
-use bounding_box::BoundingBox;
 use truescad_types::{Float, PI, Point, Vector};
 
 #[derive(Clone, Debug)]

@@ -11,9 +11,9 @@ path = "lib.rs"
 nalgebra = "0.14"
 approx = "0.1.1"
 alga = "0.5"
-lazy_static = "0.2.8"
 stl_io = "0.3.4"
 truescad_types = { path = "../types", version = "0.2.1" }
+truescad_bbox = { path = "../bbox", version = "0.4" }
 
 [dev-dependencies]
 bencher = "0.1.*"

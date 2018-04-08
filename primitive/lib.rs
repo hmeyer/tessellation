@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
 extern crate nalgebra as na;
 #[cfg(not(test))]
 extern crate approx;
@@ -8,12 +6,11 @@ extern crate approx;
 extern crate approx;
 extern crate alga;
 extern crate truescad_types;
+extern crate truescad_bbox;
 extern crate stl_io;
 use std::fmt::Debug;
 pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
-
-mod bounding_box;
-pub use self::bounding_box::{BoundingBox, INFINITY_BOX, NEG_INFINITY_BOX};
+pub use truescad_bbox::{BoundingBox};
 
 mod transformer;
 pub use self::transformer::AffineTransformer;
@@ -55,10 +52,8 @@ pub fn normal_from_object(f: &Object, p: Point) -> Vector {
 }
 
 pub trait Object: ObjectClone + Debug + Sync + Send {
-    fn bbox(&self) -> &bounding_box::BoundingBox {
-        &bounding_box::INFINITY_BOX
-    }
-    fn set_bbox(&mut self, _: bounding_box::BoundingBox) {
+    fn bbox(&self) -> &BoundingBox;
+    fn set_bbox(&mut self, _: BoundingBox) {
         unimplemented!();
     }
     fn set_parameters(&mut self, _: &PrimitiveParameters) {}

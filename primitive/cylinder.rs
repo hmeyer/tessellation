@@ -1,5 +1,4 @@
-use Object;
-use bounding_box::{BoundingBox, INFINITY_BOX};
+use {Object, BoundingBox};
 use truescad_types::{Float, INFINITY, NEG_INFINITY, Point, Vector};
 
 
@@ -56,7 +55,7 @@ impl Cone {
                      distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
                      offset: offset,
                      normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
-                     bbox: INFINITY_BOX.clone(),
+                     bbox: BoundingBox::infinity(),
                  })
     }
 }

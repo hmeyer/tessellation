@@ -1,0 +1,13 @@
+[package]
+name = "truescad_bbox"
+version = "0.4.1"
+authors = ["Henning Meyer <tutmann@gmail.com>"]
+
+[lib]
+name = "truescad_bbox"
+path = "lib.rs"
+
+[dependencies]
+nalgebra = "0.14"
+alga = "0.5"
+truescad_types = { path = "../types", version = "0.2.1" }

@@ -1,5 +1,4 @@
-use {ALWAYS_PRECISE, Object, PrimitiveParameters, normal_from_object};
-use bounding_box::{BoundingBox, INFINITY_BOX, NEG_INFINITY_BOX};
+use {ALWAYS_PRECISE, Object, BoundingBox, PrimitiveParameters, normal_from_object};
 use truescad_types::{Float, INFINITY, NEG_INFINITY, Point, Vector};
 
 pub const FADE_RANGE: Float = 0.1;
@@ -21,7 +20,7 @@ impl Union {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(NEG_INFINITY_BOX.clone(),
+                    .fold(BoundingBox::neg_infinity(),
                           |union_box, x| union_box.union(x.bbox()))
                     .dilate(r * 0.2); // dilate by some factor of r
                 Some(Box::new(Union {
@@ -108,8 +107,8 @@ impl Intersection {
             1 => Some(v.pop().unwrap()),
             _ => {
                 let bbox = v.iter()
-                    .fold(INFINITY_BOX.clone(),
-                          |union_box, x| union_box.intersection(x.bbox()));
+                    .fold(BoundingBox::infinity(),
+                          |intersection_box, x| intersection_box.intersection(x.bbox()));
                 Some(Box::new(Intersection {
                                   objs: v,
                                   r: r,
@@ -193,12 +192,13 @@ impl Object for Intersection {
 #[derive(Clone, Debug)]
 pub struct Negation {
     object: Box<Object>,
+    infinity_bbox: BoundingBox,
 }
 
 impl Negation {
     pub fn from_vec(v: Vec<Box<Object>>) -> Vec<Box<Object>> {
         v.iter()
-            .map(|o| Box::new(Negation { object: o.clone() }) as Box<Object>)
+            .map(|o| Box::new(Negation { object: o.clone(), infinity_bbox: BoundingBox::infinity() }) as Box<Object>)
             .collect()
     }
 }
@@ -209,6 +209,9 @@ impl Object for Negation {
     }
     fn normal(&self, p: Point) -> Vector {
         self.object.normal(p) * -1.
+    }
+    fn bbox(&self) -> &BoundingBox {
+        &self.infinity_bbox
     }
 }
 
