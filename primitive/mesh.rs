@@ -241,7 +241,6 @@ impl Object for Mesh {
 #[cfg(test)]
 mod test {
     use super::*;
-    use INFINITY_BOX;
     use truescad_types::PI;
 
     #[test]
@@ -366,7 +365,7 @@ mod test {
     #[test]
     fn test_2face_edge() {
         let convex_mesh = Mesh {
-            bbox: INFINITY_BOX.clone(),
+            bbox: BoundingBox::<Float>::infinity(),
             vertices: vec![
                 Vector::new(0., 0., 100.),
                 Vector::new(0., 0., -100.),
@@ -427,7 +426,7 @@ mod test {
     #[test]
     fn test_2face_convex_vertex() {
         let mesh = Mesh {
-            bbox: INFINITY_BOX.clone(),
+            bbox: BoundingBox::<Float>::infinity(),
             vertices: vec![
                 Vector::new(0., 0., 0.),
                 Vector::new(100., -100., -100.),
@@ -463,7 +462,7 @@ mod test {
     #[test]
     fn test_2face_concave_vertex() {
         let mesh = Mesh {
-            bbox: INFINITY_BOX.clone(),
+            bbox: BoundingBox::<Float>::infinity(),
             vertices: vec![
                 Vector::new(0., 0., 0.),
                 Vector::new(100., 100., 100.),

@@ -99,6 +99,7 @@ mod test {
     pub struct MockObject {
         value: Float,
         normal: Vector,
+        bbox: BoundingBox<Float>,
     }
 
     impl MockObject {
@@ -106,6 +107,7 @@ mod test {
             Box::new(MockObject {
                 value: value,
                 normal: normal,
+                bbox: BoundingBox::<Float>::infinity(),
             })
         }
     }
@@ -116,6 +118,9 @@ mod test {
         }
         fn normal(&self, _: Point) -> Vector {
             self.normal.clone()
+        }
+        fn bbox(&self) -> &BoundingBox<Float> {
+            &self.bbox
         }
     }
 

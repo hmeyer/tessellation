@@ -137,7 +137,7 @@ impl Qef {
 
 #[cfg(test)]
 mod tests {
-    use super::{BoundingBox, Point, Qef};
+    use super::{BoundingBox, Float, Point, Qef};
     use super::super::Plane;
     use super::super::Vector;
     use na;
