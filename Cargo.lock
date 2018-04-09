@@ -944,7 +944,7 @@ dependencies = [
 
 [[package]]
 name = "truescad_bbox"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "alga 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -956,7 +956,7 @@ name = "truescad_luascad"
 version = "0.2.3"
 dependencies = [
  "hlua 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.0",
+ "truescad_bbox 0.6.1",
  "truescad_primitive 0.5.1",
  "truescad_types 0.2.1",
 ]
@@ -969,7 +969,7 @@ dependencies = [
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stl_io 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.0",
+ "truescad_bbox 0.6.1",
  "truescad_types 0.2.1",
 ]
 
@@ -983,7 +983,7 @@ dependencies = [
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.0",
+ "truescad_bbox 0.6.1",
  "truescad_primitive 0.5.1",
  "truescad_types 0.2.1",
 ]
