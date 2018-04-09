@@ -1,8 +1,8 @@
 //! ```bbox_rs``` is crate for managing axis aligned 3d Bounding Boxes.
 //! Bounding Boxes can be created, dilated, transformed and joined with other Bounding Boxes using
 //! CSG operations.
-//! Finally you can test whether or not a Bounding Box contains some point and what approximate distance
-//! a Point has to the Box.
+//! Finally you can test whether or not a Bounding Box contains some point and what approximate
+//! distance a Point has to the Box.
 //! # Examples
 //!
 //! Intersect two Bounding Boxes
@@ -10,8 +10,10 @@
 //! ```rust,no_run
 //! extern crate nalgebra as na;
 //! extern crate truescad_bbox;
-//! let bbox1 = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 2., 3.));
-//! let bbox2 = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(-1., -2., -3.), na::Point3::new(3., 2., 1.));
+//! let bbox1 = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.),
+//!                                                    na::Point3::new(1., 2., 3.));
+//! let bbox2 = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(-1., -2., -3.),
+//!                                                    na::Point3::new(3., 2., 1.));
 //! let intersection = bbox1.intersection(&bbox2);
 //! ```
 //! Rotate a Bounding Box:
@@ -20,7 +22,8 @@
 //! extern crate nalgebra as na;
 //! extern crate truescad_bbox;
 //! let rotation = na::Rotation::from_euler_angles(10., 11., 12.).to_homogeneous();
-//! let bbox = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 2., 3.));
+//! let bbox = truescad_bbox::BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.),
+//!                                                   na::Point3::new(1., 2., 3.));
 //! let rotated_box = bbox.transform(&rotation);
 //! ```
 
@@ -84,8 +87,19 @@ impl<S: 'static + Float + Real + Debug> BoundingBox<S> {
         }
     }
     /// Create a new Bounding Box by supplying two points.
-    pub fn new(min: na::Point3<S>, max: na::Point3<S>) -> BoundingBox<S> {
-        BoundingBox { min: min, max: max }
+    pub fn new(a: na::Point3<S>, b: na::Point3<S>) -> BoundingBox<S> {
+        BoundingBox {
+            min: na::Point3::<S>::new(
+                Real::min(a.x, b.x),
+                Real::min(a.y, b.y),
+                Real::min(a.z, b.z),
+            ),
+            max: na::Point3::<S>::new(
+                Real::max(a.x, b.x),
+                Real::max(a.y, b.y),
+                Real::max(a.z, b.z),
+            ),
+        }
     }
     /// Create a CSG Union of two Bounding Boxes.
     pub fn union(&self, other: &BoundingBox<S>) -> BoundingBox<S> {
@@ -141,8 +155,8 @@ impl<S: 'static + Float + Real + Debug> BoundingBox<S> {
     pub fn dim(&self) -> na::Vector3<S> {
         self.max - self.min
     }
-    /// Returns the approximate distance of p to the box. The result is guarateed to be not less than
-    /// the euclidean distance of p to the box.
+    /// Returns the approximate distance of p to the box. The result is guarateed to be not less
+    /// than the euclidean distance of p to the box.
     pub fn distance(&self, p: na::Point3<S>) -> S {
         // If p is not inside (neg), then it is outside (pos) on only one side.
         // So so calculating the max of the diffs on both sides should result in the true value,
