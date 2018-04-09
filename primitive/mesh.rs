@@ -223,7 +223,7 @@ fn bbox_for_mesh(mesh: &::stl_io::IndexedMesh) -> BoundingBox<Float> {
 
 impl Object for Mesh {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             self.value(p)
         } else {

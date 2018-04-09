@@ -18,7 +18,7 @@ impl Sphere {
 
 impl Object for Sphere {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             return Vector::new(p.x, p.y, p.z).norm() - self.radius;
         } else {

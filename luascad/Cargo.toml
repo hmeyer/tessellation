@@ -1,6 +1,6 @@
 [package]
 name = "truescad_luascad"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -12,4 +12,4 @@ hlua = "0.3"
 
 truescad_types = { path = "../types", version = "0.2.1" }
 truescad_primitive = { path = "../primitive", version = "0.5" }
-truescad_bbox = { path = "../bbox", version = "0.5" }
+truescad_bbox = { path = "../bbox", version = "0.6" }

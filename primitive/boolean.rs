@@ -38,7 +38,7 @@ impl Union {
 
 impl Object for Union {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             rvmin(
                 &self.objs
@@ -138,7 +138,7 @@ impl Intersection {
 
 impl Object for Intersection {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             rvmax(
                 &self.objs

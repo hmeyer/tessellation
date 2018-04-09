@@ -12,7 +12,7 @@ pub struct AffineTransformer {
 
 impl Object for AffineTransformer {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             self.object
                 .approx_value(self.transform.transform_point(&p), slack / self.scale_min)

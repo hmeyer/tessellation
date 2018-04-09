@@ -23,7 +23,7 @@ impl Cylinder {
 
 impl Object for Cylinder {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             let pv = Vector::new(p.x, p.y, 0.);
             return pv.norm() - self.radius;

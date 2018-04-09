@@ -11,7 +11,7 @@ pub struct Bender {
 
 impl Object for Bender {
     fn approx_value(&self, p: Point, slack: Float) -> Float {
-        let approx = self.bbox.value(p);
+        let approx = self.bbox.distance(p);
         if approx <= slack {
             let mut obj_p = self.to_polar(p);
             let r = obj_p.y;

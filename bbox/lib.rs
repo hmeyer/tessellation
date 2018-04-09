@@ -141,9 +141,9 @@ impl<S: 'static + Float + Real + Debug> BoundingBox<S> {
     pub fn dim(&self) -> na::Vector3<S> {
         self.max - self.min
     }
-    /// Return approximate distance of p to the box. The result is guarateed to be not less than
+    /// Returns the approximate distance of p to the box. The result is guarateed to be not less than
     /// the euclidean distance of p to the box.
-    pub fn value(&self, p: na::Point3<S>) -> S {
+    pub fn distance(&self, p: na::Point3<S>) -> S {
         // If p is not inside (neg), then it is outside (pos) on only one side.
         // So so calculating the max of the diffs on both sides should result in the true value,
         // if positive.
