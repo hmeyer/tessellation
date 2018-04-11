@@ -4,12 +4,12 @@ extern crate approx;
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
+extern crate bbox;
 extern crate nalgebra as na;
 extern crate stl_io;
-extern crate truescad_bbox;
 extern crate truescad_types;
+use bbox::BoundingBox;
 use std::fmt::Debug;
-use truescad_bbox::BoundingBox;
 pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
 
 mod transformer;

@@ -1,7 +1,7 @@
+extern crate bbox;
 #[macro_use]
 extern crate hlua;
 
-extern crate truescad_bbox;
 extern crate truescad_primitive;
 extern crate truescad_types;
 

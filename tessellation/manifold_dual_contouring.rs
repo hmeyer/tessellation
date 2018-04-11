@@ -10,7 +10,7 @@ use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
 use truescad_primitive::{normal_from_object, Object};
-use truescad_bbox::BoundingBox;
+use bbox::BoundingBox;
 use truescad_types;
 use truescad_types::{Float, Point, Vector};
 use vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};

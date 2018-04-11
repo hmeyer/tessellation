@@ -39,6 +39,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bbox"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "alga 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "bencher"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -936,55 +946,46 @@ dependencies = [
  "sourceview 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stl_io 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_luascad 0.2.3",
- "truescad_primitive 0.5.1",
- "truescad_tessellation 0.2.4",
+ "truescad_luascad 0.2.4",
+ "truescad_primitive 0.5.2",
+ "truescad_tessellation 0.2.5",
  "truescad_types 0.2.1",
 ]
 
 [[package]]
-name = "truescad_bbox"
-version = "0.6.1"
-dependencies = [
- "alga 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-traits 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "truescad_luascad"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
+ "bbox 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hlua 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.1",
- "truescad_primitive 0.5.1",
+ "truescad_primitive 0.5.2",
  "truescad_types 0.2.1",
 ]
 
 [[package]]
 name = "truescad_primitive"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "alga 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bbox 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stl_io 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.1",
  "truescad_types 0.2.1",
 ]
 
 [[package]]
 name = "truescad_tessellation"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
+ "bbox 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "truescad_bbox 0.6.1",
- "truescad_primitive 0.5.1",
+ "truescad_primitive 0.5.2",
  "truescad_types 0.2.1",
 ]
 
@@ -1044,6 +1045,7 @@ dependencies = [
 "checksum approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "08abcc3b4e9339e33a3d0a5ed15d84a687350c05689d825e0f6655eef9e76a94"
 "checksum arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a1e964f9e24d588183fcb43503abda40d288c8657dfc27311516ce2f05675aef"
 "checksum atk-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "33a67fd81e1922dddc335887516f2f5254534e89c9d39fa89bca5d79bd150d34"
+"checksum bbox 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "49a36c561a76560e5f2d306de996948be505cdc936682efb74b99bc966b459a2"
 "checksum bencher 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
 "checksum bitflags 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b3c30d3802dfb7281680d6285f2ccdaa8c2d8fee41f93805dba5c4cf50dc23cf"
 "checksum byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0fc10e8cc6b2580fda3f36eb6dc5316657f812a3df879a44a66fc9f0fdbc4855"

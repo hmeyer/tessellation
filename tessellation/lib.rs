@@ -1,3 +1,4 @@
+extern crate bbox;
 extern crate byteorder;
 #[macro_use]
 extern crate lazy_static;
@@ -5,7 +6,6 @@ extern crate nalgebra as na;
 extern crate rand;
 extern crate rayon;
 extern crate time;
-extern crate truescad_bbox;
 extern crate truescad_primitive;
 extern crate truescad_types;
 
