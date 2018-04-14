@@ -1,5 +1,6 @@
 use super::Mesh;
 use Plane;
+use bbox::BoundingBox;
 use bitset::BitSet;
 use cell_configs::CELL_CONFIGS;
 use qef;
@@ -10,7 +11,6 @@ use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
 use truescad_primitive::{normal_from_object, Object};
-use bbox::BoundingBox;
 use truescad_types;
 use truescad_types::{Float, Point, Vector};
 use vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};
@@ -133,7 +133,7 @@ impl fmt::Display for DualContouringError {
 #[derive(Debug)]
 pub struct Vertex {
     index: Index,
-    qef: RefCell<qef::Qef>,
+    qef: RefCell<qef::Qef<Float>>,
     neighbors: [Vec<VarIndex>; 6],
     parent: Cell<Option<usize>>,
     children: Vec<usize>,
@@ -211,7 +211,7 @@ impl ManifoldDualContouring {
             impl_: ManifoldDualContouringImpl::new(obj, res, relative_error),
         }
     }
-    pub fn tessellate(&mut self) -> Option<Mesh> {
+    pub fn tessellate(&mut self) -> Option<Mesh<Float>> {
         self.impl_.tessellate()
     }
 }
@@ -221,11 +221,11 @@ pub struct ManifoldDualContouringImpl {
     object: Box<Object>,
     origin: Point,
     dim: [usize; 3],
-    mesh: RefCell<Mesh>,
+    mesh: RefCell<Mesh<Float>>,
     res: Float,
     error: Float,
     value_grid: HashMap<Index, Float>,
-    pub edge_grid: RefCell<HashMap<EdgeIndex, Plane>>,
+    pub edge_grid: RefCell<HashMap<EdgeIndex, Plane<Float>>>,
     // The Vertex Octtree. vertex_octtree[0] stores the leaf vertices. vertex_octtree[1] the next
     // layer and so on. vertex_octtree.len() is the depth of the octtree.
     pub vertex_octtree: Vec<Vec<Vertex>>,
@@ -451,7 +451,7 @@ impl ManifoldDualContouringImpl {
             vertex_index_map: HashMap::new(),
         }
     }
-    pub fn tessellate(&mut self) -> Option<Mesh> {
+    pub fn tessellate(&mut self) -> Option<Mesh<Float>> {
         println!(
             "ManifoldDualContouringImpl: res: {:} {:?}",
             self.res,
@@ -490,7 +490,7 @@ impl ManifoldDualContouringImpl {
 
     // This method does the main work of tessellation.
     // It may fail, if the value in one of the grid cells yields exactly zero.
-    fn try_tessellate(&mut self) -> Result<Mesh, DualContouringError> {
+    fn try_tessellate(&mut self) -> Result<Mesh<Float>, DualContouringError> {
         let mut t = Timer::new();
         if let Some(e) = self.tessellation_step1() {
             return Err(e);
@@ -740,18 +740,20 @@ impl ManifoldDualContouringImpl {
                     match vertices[vi].neighbors[np][ni] {
                         VarIndex::VertexIndex(_) => panic!("unexpected VertexIndex."),
                         VarIndex::Index(i) => {
-                            debug_assert!(vertices[i].neighbors[np ^ 1]
-                                              .contains(&VarIndex::Index(vi)),
-                                          "vertex[{}].neighbors[{}][{}]=={:?}, but vertex[{}].neighbors[{}]=={:?}\n{:?} vs. {:?}",
-                                          vi,
-                                          np,
-                                          ni,
-                                          vertices[vi].neighbors[np][ni],
-                                          i,
-                                          np ^ 1,
-                                          vertices[i].neighbors[np ^ 1],
-                                          vertices[vi],
-                                          vertices[i]);
+                            debug_assert!(
+                                vertices[i].neighbors[np ^ 1].contains(&VarIndex::Index(vi)),
+                                "vertex[{}].neighbors[{}][{}]=={:?},
+                                 but vertex[{}].neighbors[{}]=={:?}\n{:?} vs. {:?}",
+                                vi,
+                                np,
+                                ni,
+                                vertices[vi].neighbors[np][ni],
+                                i,
+                                np ^ 1,
+                                vertices[i].neighbors[np ^ 1],
+                                vertices[vi],
+                                vertices[i]
+                            );
                         }
                     }
                 }
@@ -831,7 +833,7 @@ impl ManifoldDualContouringImpl {
         }
     }
 
-    fn get_edge_tangent_plane(&self, edge_index: &EdgeIndex) -> Plane {
+    fn get_edge_tangent_plane(&self, edge_index: &EdgeIndex) -> Plane<Float> {
         if let Some(ref plane) = self.edge_grid.borrow().get(&edge_index.base()) {
             return *plane.clone();
         }
@@ -953,7 +955,7 @@ impl ManifoldDualContouringImpl {
     // If a is inside the object and b outside - this method returns the point on the line between
     // a and b where the object edge is. It also returns the normal on that point.
     // av and bv represent the object values at a and b.
-    fn find_zero(&self, a: Point, av: Float, b: Point, bv: Float) -> Option<(Plane)> {
+    fn find_zero(&self, a: Point, av: Float, b: Point, bv: Float) -> Option<(Plane<Float>)> {
         assert!(a != b);
         if av.signum() == bv.signum() {
             return None;

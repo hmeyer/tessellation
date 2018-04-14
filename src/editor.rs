@@ -139,7 +139,7 @@ impl Editor {
     pub fn save(&self, filename: &str) {
         save_from_sourceview(&self.source_view, filename);
     }
-    pub fn tessellate(&self) -> Option<Mesh> {
+    pub fn tessellate(&self) -> Option<Mesh<truescad_primitive::Float>> {
         let maybe_obj = self.get_object(&mut ::std::io::stdout());
         if let Some(obj) = maybe_obj {
             let s = settings::SettingsData::new();

@@ -1,37 +1,51 @@
 use Plane;
+use alga::general::Real;
 use bbox::BoundingBox;
 use na;
-use truescad_types::{Float, Point, EPSILON, NAN};
+use num_traits::Float;
+use std::convert;
+use std::fmt::Debug;
+
+
+pub const EPSILON: f64 = 1e-10;
 
 // Quadratic error function
 
 #[derive(Clone, Debug)]
-pub struct Qef {
+pub struct Qef<S: 'static + Real + Debug> {
     // Point closest to all planes.
-    pub solution: na::Vector3<Float>,
-    sum: na::Vector3<Float>,
+    pub solution: na::Vector3<S>,
+    sum: na::Vector3<S>,
     pub num: usize,
     // Upper right triangle of AT * A
-    ata: [Float; 6],
+    ata: [S; 6],
     // Vector AT * B
-    atb: na::Vector3<Float>,
+    atb: na::Vector3<S>,
     // Scalar BT * B
-    btb: Float,
-    pub error: Float,
-    bbox: BoundingBox<Float>,
+    btb: S,
+    pub error: S,
+    bbox: BoundingBox<S>,
 }
 
 
-impl Qef {
-    pub fn new(planes: &[Plane], bbox: BoundingBox<Float>) -> Qef {
+impl<S: 'static + Real + Float + Debug + From<f64>> Qef<S> {
+    pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
         let mut qef = Qef {
-            solution: na::Vector3::new(NAN, NAN, NAN),
-            sum: na::Vector3::new(0., 0., 0.),
+            solution: na::Vector3::new(S::nan(), S::nan(), S::nan()),
+            sum: na::Vector3::new(
+                convert::From::from(0.),
+                convert::From::from(0.),
+                convert::From::from(0.),
+            ),
             num: planes.len(),
-            ata: [0.; 6],
-            atb: na::Vector3::new(0., 0., 0.),
-            btb: 0.,
-            error: NAN,
+            ata: [convert::From::from(0.); 6],
+            atb: na::Vector3::new(
+                convert::From::from(0.),
+                convert::From::from(0.),
+                convert::From::from(0.),
+            ),
+            btb: convert::From::from(0.),
+            error: S::nan(),
             bbox: bbox,
         };
         for p in planes {
@@ -56,23 +70,24 @@ impl Qef {
     pub fn solve(&mut self) {
         let m = &self.ata;
         let ma = na::Matrix3::new(m[0], m[1], m[2], m[1], m[3], m[4], m[2], m[4], m[5]);
-        let mean = self.sum / self.num as Float;
+        let sum_as_s: S = convert::From::from(self.num as f64);
+        let mean: na::Vector3<S> = self.sum / sum_as_s;
         if let Some(inv) = ma.try_inverse() {
-            let b_rel_mean: na::Vector3<Float> = self.atb - ma * mean;
+            let b_rel_mean: na::Vector3<S> = self.atb - ma * mean;
             self.solution = inv * b_rel_mean + mean;
         }
 
         // If solution is not contained in cell bbox, start a binary search for a proper solution.
         // NAN-solution will also not be contained in the bbox.
-        if !self.bbox.contains(Point::new(
+        if !self.bbox.contains(na::Point3::new(
             self.solution.x,
             self.solution.y,
             self.solution.z,
         )) {
-            let accuracy = (self.bbox.max.x - self.bbox.min.x) / 100.0;
+            let accuracy = (self.bbox.max.x - self.bbox.min.x) / convert::From::from(100.0);
             self.solution = self.search_solution(accuracy, &mut self.bbox.clone(), &ma);
             debug_assert!(
-                self.bbox.dilate(accuracy).contains(Point::new(
+                self.bbox.dilate(accuracy).contains(na::Point3::new(
                     self.solution.x,
                     self.solution.y,
                     self.solution.z
@@ -87,16 +102,16 @@ impl Qef {
     // Do a binary search. Stop, if bbox is smaller then accuracy.
     fn search_solution(
         &self,
-        accuracy: Float,
-        bbox: &mut BoundingBox<Float>,
-        ma: &na::Matrix3<Float>,
-    ) -> na::Vector3<Float> {
+        accuracy: S,
+        bbox: &mut BoundingBox<S>,
+        ma: &na::Matrix3<S>,
+    ) -> na::Vector3<S> {
         // Generate bbox mid-point and error value on mid-point.
         // TODO: use proper apis
-        let mid = Point::new(
-            (bbox.max.x + bbox.min.x) * 0.5,
-            (bbox.max.y + bbox.min.y) * 0.5,
-            (bbox.max.z + bbox.min.z) * 0.5,
+        let mid = na::Point3::new(
+            (bbox.max.x + bbox.min.x) * convert::From::from(0.5),
+            (bbox.max.y + bbox.min.y) * convert::From::from(0.5),
+            (bbox.max.z + bbox.min.z) * convert::From::from(0.5),
         );
         let na_mid = na::Vector3::new(mid.x, mid.y, mid.z);
         if bbox.max.x - bbox.min.x <= accuracy {
@@ -109,7 +124,7 @@ impl Qef {
         // might need to do something more clever here.
         for dim in 0..3 {
             let mut d_mid = na_mid.clone();
-            d_mid[dim] += EPSILON;
+            d_mid[dim] += convert::From::from(EPSILON);
             let d_error = self.error(&d_mid, ma);
             if d_error < mid_error {
                 bbox.min[dim] = mid[dim];
@@ -119,10 +134,11 @@ impl Qef {
         }
         self.search_solution(accuracy, bbox, ma)
     }
-    fn error(&self, point: &na::Vector3<Float>, ma: &na::Matrix3<Float>) -> Float {
-        self.btb - 2. * na::dot(point, &self.atb) + na::dot(point, &(*ma * *point))
+    fn error(&self, point: &na::Vector3<S>, ma: &na::Matrix3<S>) -> S {
+        let _2_as_s: S = convert::From::from(2f64);
+        self.btb - _2_as_s * na::dot(point, &self.atb) + na::dot(point, &(*ma * *point))
     }
-    pub fn merge(&mut self, other: &Qef) {
+    pub fn merge(&mut self, other: &Qef<S>) {
         for i in 0..6 {
             self.ata[i] += other.ata[i];
         }
@@ -137,30 +153,29 @@ impl Qef {
 
 #[cfg(test)]
 mod tests {
-    use super::{BoundingBox, Float, Point, Qef};
+    use super::{BoundingBox, Qef};
     use super::super::Plane;
-    use super::super::Vector;
     use na;
 
     #[test]
     fn origin() {
-        let origin = Point::new(0., 0., 0.);
+        let origin = na::Point3::new(0., 0., 0.);
         let mut qef = Qef::new(
             &[
                 Plane {
                     p: origin.clone(),
-                    n: Vector::new(0., 1., 2.).normalize(),
+                    n: na::Vector3::new(0., 1., 2.).normalize(),
                 },
                 Plane {
                     p: origin.clone(),
-                    n: Vector::new(1., 2., 3.).normalize(),
+                    n: na::Vector3::new(1., 2., 3.).normalize(),
                 },
                 Plane {
                     p: origin.clone(),
-                    n: Vector::new(2., 3., 4.).normalize(),
+                    n: na::Vector3::new(2., 3., 4.).normalize(),
                 },
             ],
-            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
+            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(
@@ -175,19 +190,19 @@ mod tests {
         let mut qef = Qef::new(
             &[
                 Plane {
-                    p: Point::new(1., 0., 0.),
-                    n: Vector::new(0., 1., 1.).normalize(),
+                    p: na::Point3::new(1., 0., 0.),
+                    n: na::Vector3::new(0., 1., 1.).normalize(),
                 },
                 Plane {
-                    p: Point::new(0., 1., 0.),
-                    n: Vector::new(1., 0., 1.).normalize(),
+                    p: na::Point3::new(0., 1., 0.),
+                    n: na::Vector3::new(1., 0., 1.).normalize(),
                 },
                 Plane {
-                    p: Point::new(0., 0., 1.),
-                    n: Vector::new(1., 1., 0.).normalize(),
+                    p: na::Point3::new(0., 0., 1.),
+                    n: na::Vector3::new(1., 1., 0.).normalize(),
                 },
             ],
-            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 1., 1.)),
+            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(relative_eq!(qef.solution, &na::Vector3::new(0., 0., 0.)));
@@ -198,19 +213,19 @@ mod tests {
         let mut qef = Qef::new(
             &[
                 Plane {
-                    p: Point::new(1., 0., 0.),
-                    n: Vector::new(1., 0., 0.),
+                    p: na::Point3::new(1., 0., 0.),
+                    n: na::Vector3::new(1., 0., 0.),
                 },
                 Plane {
-                    p: Point::new(0., 2., 0.),
-                    n: Vector::new(0., 1., 0.),
+                    p: na::Point3::new(0., 2., 0.),
+                    n: na::Vector3::new(0., 1., 0.),
                 },
                 Plane {
-                    p: Point::new(0., 0., 3.),
-                    n: Vector::new(0., 0., 1.),
+                    p: na::Point3::new(0., 0., 3.),
+                    n: na::Vector3::new(0., 0., 1.),
                 },
             ],
-            BoundingBox::<Float>::new(Point::new(0., 0., 0.), Point::new(1., 2., 3.)),
+            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 2., 3.)),
         );
         qef.solve();
         let expected_solution = na::Vector3::new(1., 2., 3.);
