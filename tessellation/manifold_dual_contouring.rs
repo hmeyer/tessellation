@@ -206,7 +206,11 @@ impl ManifoldDualContouring {
     // obj: Object to tessellate
     // res: resolution
     // relative_error: acceptable error threshold when simplifying the mesh.
-    pub fn new(obj: Box<Object>, res: Float, relative_error: Float) -> ManifoldDualContouring {
+    pub fn new(
+        obj: Box<Object<Float>>,
+        res: Float,
+        relative_error: Float,
+    ) -> ManifoldDualContouring {
         ManifoldDualContouring {
             impl_: ManifoldDualContouringImpl::new(obj, res, relative_error),
         }
@@ -218,7 +222,7 @@ impl ManifoldDualContouring {
 
 #[derive(Clone)]
 pub struct ManifoldDualContouringImpl {
-    object: Box<Object>,
+    object: Box<Object<Float>>,
     origin: Point,
     dim: [usize; 3],
     mesh: RefCell<Mesh<Float>>,
@@ -429,7 +433,11 @@ impl ManifoldDualContouringImpl {
     // obj: Object to tessellate
     // res: resolution
     // relative_error: acceptable error threshold when simplifying the mesh.
-    pub fn new(obj: Box<Object>, res: Float, relative_error: Float) -> ManifoldDualContouringImpl {
+    pub fn new(
+        obj: Box<Object<Float>>,
+        res: Float,
+        relative_error: Float,
+    ) -> ManifoldDualContouringImpl {
         let bbox = obj.bbox().dilate(1. + res * 1.1);
         ManifoldDualContouringImpl {
             object: obj,

@@ -1,82 +1,89 @@
 use {BoundingBox, Object};
-use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
+use alga::general::Real;
+use na;
+use num_traits::Float;
 
 
 // A cylinder along the Z-Axis
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cylinder {
-    radius: Float,
-    bbox: BoundingBox<Float>,
+pub struct Cylinder<S: Real> {
+    radius: S,
+    bbox: BoundingBox<S>,
 }
 
-impl Cylinder {
-    pub fn new(r: Float) -> Box<Cylinder> {
+impl<S: Real + Float> Cylinder<S> {
+    pub fn new(r: S) -> Box<Cylinder<S>> {
         Box::new(Cylinder {
             radius: r,
-            bbox: BoundingBox::<Float>::new(
-                Point::new(-r, -r, NEG_INFINITY),
-                Point::new(r, r, INFINITY),
+            bbox: BoundingBox::new(
+                na::Point3::new(-r, -r, S::neg_infinity()),
+                na::Point3::new(r, r, S::infinity()),
             ),
         })
     }
 }
 
-impl Object for Cylinder {
-    fn approx_value(&self, p: Point, slack: Float) -> Float {
+impl<S: ::std::fmt::Debug + Real + From<f64> + Float> Object<S> for Cylinder<S> {
+    fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
-            let pv = Vector::new(p.x, p.y, 0.);
+            let _0: S = From::from(0f64);
+            let pv = na::Vector3::new(p.x, p.y, _0);
             return pv.norm() - self.radius;
         } else {
             approx
         }
     }
-    fn bbox(&self) -> &BoundingBox<Float> {
+    fn bbox(&self) -> &BoundingBox<S> {
         &self.bbox
     }
-    fn normal(&self, p: Point) -> Vector {
-        let pv = Vector::new(p.x, p.y, 0.);
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+        let _0: S = From::from(0f64);
+        let pv = na::Vector3::new(p.x, p.y, _0);
         return pv.normalize();
     }
 }
 
 // A cone along the Z-Axis
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cone {
-    slope: Float,
-    distance_multiplier: Float,
-    offset: Float,            // Offset the singularity from Z-zero
-    normal_multiplier: Float, // muliplier for the normal caclulation
-    bbox: BoundingBox<Float>,
+pub struct Cone<S: Real> {
+    slope: S,
+    distance_multiplier: S,
+    offset: S,            // Offset the singularity from Z-zero
+    normal_multiplier: S, // muliplier for the normal caclulation
+    bbox: BoundingBox<S>,
 }
 
-impl Cone {
-    pub fn new(slope: Float, offset: Float) -> Box<Cone> {
+impl<S: Real + Float + From<f64>> Cone<S> {
+    pub fn new(slope: S, offset: S) -> Box<Cone<S>> {
+        let _1: S = From::from(1f64);
         Box::new(Cone {
             slope: slope,
-            distance_multiplier: 1. / (slope * slope + 1.).sqrt(), // cos(atan(slope))
+            distance_multiplier: _1 / Float::sqrt(slope * slope + _1), // cos(atan(slope))
             offset: offset,
-            normal_multiplier: slope / (slope * slope + 1.).sqrt(), // sin(atan(slope))
-            bbox: BoundingBox::<Float>::infinity(),
+            normal_multiplier: slope / Float::sqrt(slope * slope + _1), // sin(atan(slope))
+            bbox: BoundingBox::infinity(),
         })
     }
 }
 
-impl Object for Cone {
-    fn bbox(&self) -> &BoundingBox<Float> {
+impl<S: ::std::fmt::Debug + Real + From<f64> + Float> Object<S> for Cone<S> {
+    fn bbox(&self) -> &BoundingBox<S> {
         &self.bbox
     }
-    fn set_bbox(&mut self, bbox: BoundingBox<Float>) {
+    fn set_bbox(&mut self, bbox: BoundingBox<S>) {
         self.bbox = bbox
     }
-    fn approx_value(&self, p: Point, _: Float) -> Float {
-        let radius = self.slope * (p.z + self.offset).abs();
-        let pv = Vector::new(p.x, p.y, 0.);
+    fn approx_value(&self, p: na::Point3<S>, _: S) -> S {
+        let radius = Float::abs(self.slope * (p.z + self.offset));
+        let _0: S = From::from(0f64);
+        let pv = na::Vector3::new(p.x, p.y, _0);
         return (pv.norm() - radius) * self.distance_multiplier;
     }
-    fn normal(&self, p: Point) -> Vector {
-        let s = (p.z + self.offset).signum();
-        let mut pv = Vector::new(p.x, p.y, 0.);
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+        let s = Float::signum(p.z + self.offset);
+        let _0: S = From::from(0f64);
+        let mut pv = na::Vector3::new(p.x, p.y, _0);
         pv.normalize_mut();
         pv *= self.distance_multiplier;
         pv.z = -s * self.normal_multiplier;

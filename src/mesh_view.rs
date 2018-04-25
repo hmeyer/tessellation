@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::mem;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, Once, ONCE_INIT};
-use truescad_primitive;
 use truescad_tessellation::Mesh;
+use truescad_types::Float;
 
 #[derive(Clone)]
 struct SingletonWindow {
@@ -36,7 +36,7 @@ fn singleton_window() -> SingletonWindow {
     }
 }
 
-pub fn show_mesh(mesh: &Mesh<truescad_primitive::Float>) {
+pub fn show_mesh(mesh: &Mesh<Float>) {
     let window_mutex = singleton_window();
     let mut window = window_mutex.inner.lock().unwrap();
     window.glfw_window_mut().set_should_close(false);
@@ -55,9 +55,7 @@ pub fn show_mesh(mesh: &Mesh<truescad_primitive::Float>) {
     window.hide();
 }
 
-fn tessellation_to_kiss3d_mesh(
-    mesh: &Mesh<truescad_primitive::Float>,
-) -> Rc<RefCell<::kiss3d::resource::Mesh>> {
+fn tessellation_to_kiss3d_mesh(mesh: &Mesh<Float>) -> Rc<RefCell<::kiss3d::resource::Mesh>> {
     let mut na_verts = Vec::new();
     let mut na_faces = Vec::new();
     for face in mesh.faces.iter() {

@@ -21,7 +21,7 @@ const FOCAL_FACTOR: Float = 36. /* 36 mm film */ / 50.;
 pub struct Renderer {
     light_dir: Vector,
     trans: Transform,
-    object: Option<Box<Object>>,
+    object: Option<Box<Object<Float>>>,
     epsilon: Float,
     maxval: Float,
     approx_slack: Float,
@@ -39,7 +39,7 @@ impl Renderer {
         }
     }
 
-    pub fn set_object(&mut self, object: Option<Box<Object>>) {
+    pub fn set_object(&mut self, object: Option<Box<Object<Float>>>) {
         self.object = object;
         self.epsilon = self.object_width() * EPSILON;
         self.maxval = self.object_width();
@@ -58,7 +58,7 @@ impl Renderer {
 
     fn cast_ray(
         &self,
-        obj: &Box<Object>,
+        obj: &Box<Object<Float>>,
         r: &Ray,
         light_dir: &Vector,
         origin_value: Float,

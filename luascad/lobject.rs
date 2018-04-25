@@ -1,13 +1,12 @@
 use bbox::BoundingBox;
 use hlua;
 use std::sync::mpsc;
-use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Mesh, Object, SlabZ, Sphere,
-                         Twister};
+use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Object, SlabZ, Sphere, Twister};
 use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 #[derive(Clone, Debug)]
 pub struct LObject {
-    pub o: Option<Box<Object>>,
+    pub o: Option<Box<Object<Float>>>,
 }
 
 
@@ -51,10 +50,10 @@ implement_lua_read!(LObject);
 
 
 impl LObject {
-    pub fn into_object(&self) -> Option<Box<Object>> {
+    pub fn into_object(&self) -> Option<Box<Object<Float>>> {
         self.o.clone()
     }
-    pub fn export_factories<'a, L>(env: &mut hlua::LuaTable<L>, console: mpsc::Sender<String>)
+    pub fn export_factories<'a, L>(env: &mut hlua::LuaTable<L>, _console: mpsc::Sender<String>)
     where
         L: hlua::AsMutLua<'a>,
     {
@@ -74,7 +73,7 @@ impl LObject {
                                 ::truescad_primitive::SlabZ::new(z),
                             ],
                             smooth,
-                        ).unwrap() as Box<Object>),
+                        ).unwrap() as Box<Object<Float>>),
                     }
                 },
             ),
@@ -83,7 +82,7 @@ impl LObject {
             "Sphere",
             hlua::function1(|radius: Float| {
                 LObject {
-                    o: Some(Sphere::new(radius) as Box<Object>),
+                    o: Some(Sphere::new(radius) as Box<Object<Float>>),
                 }
             }),
         );
@@ -91,7 +90,7 @@ impl LObject {
             "iCylinder",
             hlua::function1(|radius: Float| {
                 LObject {
-                    o: Some(Cylinder::new(radius) as Box<Object>),
+                    o: Some(Cylinder::new(radius) as Box<Object<Float>>),
                 }
             }),
         );
@@ -99,7 +98,7 @@ impl LObject {
             "iCone",
             hlua::function1(|slope: Float| {
                 LObject {
-                    o: Some(Cone::new(slope, 0.) as Box<Object>),
+                    o: Some(Cone::new(slope, 0.) as Box<Object<Float>>),
                 }
             }),
         );
@@ -120,7 +119,7 @@ impl LObject {
                     }
                     let mut conie;
                     if radius1 == radius2 {
-                        conie = Cylinder::new(radius1) as Box<Object>;
+                        conie = Cylinder::new(radius1) as Box<Object<Float>>;
                     } else {
                         let slope = (radius2 - radius1).abs() / length;
                         let offset;
@@ -129,7 +128,7 @@ impl LObject {
                         } else {
                             offset = radius2 / slope + length * 0.5;
                         }
-                        conie = Cone::new(slope, offset) as Box<Object>;
+                        conie = Cone::new(slope, offset) as Box<Object<Float>>;
                         let rmax = radius1.max(radius2);
                         let conie_box = BoundingBox::new(
                             Point::new(-rmax, -rmax, NEG_INFINITY),
@@ -140,7 +139,7 @@ impl LObject {
                     LObject {
                         o: Some(
                             Intersection::from_vec(vec![conie, SlabZ::new(length)], smooth).unwrap()
-                                as Box<Object>,
+                                as Box<Object<Float>>,
                         ),
                     }
                 },
@@ -151,7 +150,7 @@ impl LObject {
             hlua::function2(|o: &LObject, width: Float| {
                 LObject {
                     o: if let Some(obj) = o.into_object() {
-                        Some(Bender::new(obj, width) as Box<Object>)
+                        Some(Bender::new(obj, width) as Box<Object<Float>>)
                     } else {
                         None
                     },
@@ -163,37 +162,37 @@ impl LObject {
             hlua::function2(|o: &LObject, height: Float| {
                 LObject {
                     o: if let Some(obj) = o.into_object() {
-                        Some(Twister::new(obj, height) as Box<Object>)
+                        Some(Twister::new(obj, height) as Box<Object<Float>>)
                     } else {
                         None
                     },
                 }
             }),
         );
-        env.set(
-            "Mesh",
-            hlua::function1(move |filename: String| {
-                LObject {
-                    o: match Mesh::new(&filename) {
-                        Ok(mesh) => {
-                            console
-                                .send(
-                                    "Warning: Mesh support is currently horribly inefficient!"
-                                        .to_string(),
-                                )
-                                .unwrap();
-                            Some(mesh as Box<Object>)
-                        }
-                        Err(e) => {
-                            console
-                                .send(format!("Could not read mesh: {:}", e))
-                                .unwrap();
-                            None
-                        }
-                    },
-                }
-            }),
-        );
+        // env.set(
+        //     "Mesh",
+        //     hlua::function1(move |filename: String| {
+        //         LObject {
+        //             o: match Mesh::new(&filename) {
+        //                 Ok(mesh) => {
+        //                     console
+        //                         .send(
+        //                             "Warning: Mesh support is currently horribly inefficient!"
+        //                                 .to_string(),
+        //                         )
+        //                         .unwrap();
+        //                     Some(mesh as Box<Object<Float>>)
+        //                 }
+        //                 Err(e) => {
+        //                     console
+        //                         .send(format!("Could not read mesh: {:}", e))
+        //                         .unwrap();
+        //                     None
+        //                 }
+        //             },
+        //         }
+        //     }),
+        // );
     }
     fn translate(&mut self, x: Float, y: Float, z: Float) -> LObject {
         LObject {

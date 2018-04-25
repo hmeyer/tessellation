@@ -7,7 +7,7 @@ use truescad_types::Float;
 // The lua helpers below pump LObjects from Lua Arrays into this LObjectVector, which is then used
 // to construct the boolean Objects.
 pub struct LObjectVector {
-    pub v: Option<Vec<Box<Object>>>,
+    pub v: Option<Vec<Box<Object<Float>>>>,
 }
 
 
@@ -29,7 +29,7 @@ implement_lua_read!(LObjectVector);
 
 
 impl LObjectVector {
-    pub fn new(o: Option<Box<Object>>) -> LObjectVector {
+    pub fn new(o: Option<Box<Object<Float>>>) -> LObjectVector {
         LObjectVector {
             v: if let Some(o) = o { Some(vec![o]) } else { None },
         }
@@ -44,7 +44,8 @@ impl LObjectVector {
             hlua::function2(|o: &LObjectVector, smooth: Float| {
                 LObject {
                     o: if let Some(ref v) = o.v {
-                        Some(Union::from_vec(v.clone(), smooth).unwrap() as Box<Object>)
+                        Some(Union::from_vec(v.clone(), smooth).unwrap()
+                            as Box<Object<Float>>)
                     } else {
                         None
                     },
@@ -57,7 +58,7 @@ impl LObjectVector {
                 LObject {
                     o: if let Some(ref v) = o.v {
                         Some(Intersection::from_vec(v.clone(), smooth).unwrap()
-                            as Box<Object>)
+                            as Box<Object<Float>>)
                     } else {
                         None
                     },
@@ -71,7 +72,7 @@ impl LObjectVector {
                     o: if let Some(ref v) = o.v {
                         Some(
                             Intersection::difference_from_vec(v.clone(), smooth).unwrap()
-                                as Box<Object>,
+                                as Box<Object<Float>>,
                         )
                     } else {
                         None
@@ -110,7 +111,7 @@ impl LObjectVector {
             env = env_name
         )).unwrap();
     }
-    pub fn push(&mut self, o: Option<Box<Object>>) {
+    pub fn push(&mut self, o: Option<Box<Object<Float>>>) {
         if let Some(o) = o {
             if let Some(ref mut v) = self.v {
                 v.push(o);

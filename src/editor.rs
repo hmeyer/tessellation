@@ -11,6 +11,7 @@ use truescad_luascad;
 use truescad_primitive;
 use truescad_tessellation::ManifoldDualContouring;
 use truescad_tessellation::Mesh;
+use truescad_types::Float;
 
 #[derive(Clone)]
 pub struct Editor {
@@ -87,7 +88,7 @@ impl Editor {
         );
         editor
     }
-    fn get_object(&self, msg: &mut Write) -> Option<Box<truescad_primitive::Object>> {
+    fn get_object(&self, msg: &mut Write) -> Option<Box<truescad_primitive::Object<Float>>> {
         let code_buffer = self.source_view.get_buffer().unwrap();
         let code_text = code_buffer
             .get_text(
@@ -139,7 +140,7 @@ impl Editor {
     pub fn save(&self, filename: &str) {
         save_from_sourceview(&self.source_view, filename);
     }
-    pub fn tessellate(&self) -> Option<Mesh<truescad_primitive::Float>> {
+    pub fn tessellate(&self) -> Option<Mesh<Float>> {
         let maybe_obj = self.get_object(&mut ::std::io::stdout());
         if let Some(obj) = maybe_obj {
             let s = settings::SettingsData::new();

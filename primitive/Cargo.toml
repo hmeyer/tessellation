@@ -1,6 +1,6 @@
 [package]
 name = "truescad_primitive"
-version = "0.5.2"
+version = "0.6.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -13,8 +13,7 @@ approx = "0.1.1"
 alga = "0.5"
 stl_io = "0.3.4"
 bbox = "0.7"
-
-truescad_types = { path = "../types", version = "0.2.1" }
+num-traits = "0.2"
 
 [dev-dependencies]
 bencher = "0.1.*"

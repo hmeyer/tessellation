@@ -2,15 +2,15 @@ extern crate alga;
 #[cfg(not(test))]
 extern crate approx;
 #[cfg(test)]
-#[macro_use]
 extern crate approx;
 extern crate bbox;
 extern crate nalgebra as na;
+extern crate num_traits;
 extern crate stl_io;
-extern crate truescad_types;
+use alga::general::Real;
 use bbox::BoundingBox;
+use num_traits::Float;
 use std::fmt::Debug;
-pub use truescad_types::{Float, Point, Vector, EPSILON_X, EPSILON_Y, EPSILON_Z};
 
 mod transformer;
 pub use self::transformer::AffineTransformer;
@@ -32,82 +32,94 @@ pub use self::cylinder::{Cone, Cylinder};
 
 mod slab;
 pub use self::slab::{SlabX, SlabY, SlabZ};
+//
+// mod mesh;
+// pub use self::mesh::Mesh;
 
-mod mesh;
-pub use self::mesh::Mesh;
-
-pub struct PrimitiveParameters {
-    pub fade_range: Float,
-    pub r_multiplier: Float,
+pub struct PrimitiveParameters<S> {
+    pub fade_range: S,
+    pub r_multiplier: S,
 }
 
-pub const ALWAYS_PRECISE: Float = 1.;
+pub const ALWAYS_PRECISE: f64 = 1.;
+pub const EPSILON: f64 = 1e-10;
 
-pub fn normal_from_object(f: &Object, p: Point) -> Vector {
-    let center = f.approx_value(p, ALWAYS_PRECISE);
-    let dx = f.approx_value(&p + *EPSILON_X, ALWAYS_PRECISE) - center;
-    let dy = f.approx_value(&p + *EPSILON_Y, ALWAYS_PRECISE) - center;
-    let dz = f.approx_value(&p + *EPSILON_Z, ALWAYS_PRECISE) - center;
-    Vector::new(dx, dy, dz).normalize()
+
+pub fn normal_from_object<S: Debug + Real + Float + From<f64>>(
+    f: &Object<S>,
+    p: na::Point3<S>,
+) -> na::Vector3<S> {
+    let null: S = From::from(0.0);
+    let e: S = From::from(EPSILON);
+    let a: S = From::from(ALWAYS_PRECISE);
+    let epsilon_x = na::Vector3::<S>::new(e, null, null);
+    let epsilon_y = na::Vector3::<S>::new(null, e, null);
+    let epsilon_z = na::Vector3::<S>::new(null, null, e);
+    let center = f.approx_value(p, a);
+    let dx = f.approx_value(&p + epsilon_x, a) - center;
+    let dy = f.approx_value(&p + epsilon_y, a) - center;
+    let dz = f.approx_value(&p + epsilon_z, a) - center;
+    na::Vector3::<S>::new(dx, dy, dz).normalize()
 }
 
-pub trait Object: ObjectClone + Debug + Sync + Send {
-    fn bbox(&self) -> &BoundingBox<Float>;
-    fn set_bbox(&mut self, _: BoundingBox<Float>) {
+pub trait Object<S: Real + Float + From<f64>>
+    : ObjectClone<S> + Debug + Sync + Send {
+    fn bbox(&self) -> &BoundingBox<S>;
+    fn set_bbox(&mut self, _: BoundingBox<S>) {
         unimplemented!();
     }
-    fn set_parameters(&mut self, _: &PrimitiveParameters) {}
+    fn set_parameters(&mut self, _: &PrimitiveParameters<S>) {}
     // Value is 0 on object surfaces, negative inside and positive outside of objects.
     // If positive, value is guarateed to be the minimum distance to the object surface.
     // return some approximation (which is always larger then the proper value).
     // Only do a proper calculation, for values smaller then slack.
-    fn approx_value(&self, _: Point, _: Float) -> Float {
+    fn approx_value(&self, _: na::Point3<S>, _: S) -> S {
         unimplemented!();
     }
-    fn normal(&self, _: Point) -> Vector {
+    fn normal(&self, _: na::Point3<S>) -> na::Vector3<S> {
         unimplemented!();
     }
-    fn translate(&self, v: Vector) -> Box<Object> {
+    fn translate(&self, v: na::Vector3<S>) -> Box<Object<S>> {
         AffineTransformer::new_translate(self.clone_box(), v)
     }
-    fn rotate(&self, r: Vector) -> Box<Object> {
+    fn rotate(&self, r: na::Vector3<S>) -> Box<Object<S>> {
         AffineTransformer::new_rotate(self.clone_box(), r)
     }
-    fn scale(&self, s: Vector) -> Box<Object> {
+    fn scale(&self, s: na::Vector3<S>) -> Box<Object<S>> {
         AffineTransformer::new_scale(self.clone_box(), s)
     }
 }
 
-pub trait ObjectClone {
-    fn clone_box(&self) -> Box<Object>;
+pub trait ObjectClone<S> {
+    fn clone_box(&self) -> Box<Object<S>>;
 }
 
-impl<T> ObjectClone for T
+impl<S: Real + Float + From<f64>, T> ObjectClone<S> for T
 where
-    T: 'static + Object + Clone,
+    T: 'static + Object<S> + Clone,
 {
-    fn clone_box(&self) -> Box<Object> {
+    fn clone_box(&self) -> Box<Object<S>> {
         Box::new(self.clone())
     }
 }
 
 // We can now implement Clone manually by forwarding to clone_box.
-impl Clone for Box<Object> {
-    fn clone(&self) -> Box<Object> {
+impl<S> Clone for Box<Object<S>> {
+    fn clone(&self) -> Box<Object<S>> {
         self.clone_box()
     }
 }
 
 // Objects never equal each other
-impl PartialEq for Box<Object> {
-    fn eq(&self, _: &Box<Object>) -> bool {
+impl<S> PartialEq for Box<Object<S>> {
+    fn eq(&self, _: &Box<Object<S>>) -> bool {
         false
     }
 }
 
 // Objects are never ordered
-impl PartialOrd for Box<Object> {
-    fn partial_cmp(&self, _: &Box<Object>) -> Option<::std::cmp::Ordering> {
+impl<S> PartialOrd for Box<Object<S>> {
+    fn partial_cmp(&self, _: &Box<Object<S>>) -> Option<::std::cmp::Ordering> {
         None
     }
 }

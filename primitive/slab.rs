@@ -1,107 +1,85 @@
 use {BoundingBox, Object};
-use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
+use alga::general::Real;
+use na;
+use num_traits::Float;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct SlabX {
-    distance_from_zero: Float,
-    bbox: BoundingBox<Float>,
+pub trait Axis
+    : ::std::fmt::Debug + Clone + ::std::marker::Sync + ::std::marker::Send {
+    fn value() -> usize;
 }
 
-impl SlabX {
-    pub fn new(thickness: Float) -> Box<SlabX> {
-        let d = thickness * 0.5;
-        Box::new(SlabX {
-            distance_from_zero: d,
-            bbox: BoundingBox::<Float>::new(
-                Point::new(-d, NEG_INFINITY, NEG_INFINITY),
-                Point::new(d, INFINITY, INFINITY),
-            ),
-        })
+#[derive(Clone, Debug)]
+pub struct AxisX {}
+impl Axis for AxisX {
+    fn value() -> usize {
+        0
     }
 }
 
-impl Object for SlabX {
-    fn approx_value(&self, p: Point, _: Float) -> Float {
-        return p.x.abs() - self.distance_from_zero;
+#[derive(Clone, Debug)]
+pub struct AxisY {}
+impl Axis for AxisY {
+    fn value() -> usize {
+        1
     }
-    fn bbox(&self) -> &BoundingBox<Float> {
-        &self.bbox
-    }
-    fn normal(&self, p: Point) -> Vector {
-        if p.x > 0. {
-            return Vector::new(1., 0., 0.);
-        } else {
-            return Vector::new(-1., 0., 0.);
-        }
+}
+#[derive(Clone, Debug)]
+pub struct AxisZ {}
+impl Axis for AxisZ {
+    fn value() -> usize {
+        2
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SlabY {
-    distance_from_zero: Float,
-    bbox: BoundingBox<Float>,
+pub struct Slab<A: Axis, S: Real> {
+    distance_from_zero: S,
+    bbox: BoundingBox<S>,
+    normal_pos: na::Vector3<S>,
+    normal_neg: na::Vector3<S>,
+    _phantom: ::std::marker::PhantomData<A>,
 }
 
-impl SlabY {
-    pub fn new(thickness: Float) -> Box<SlabY> {
-        let d = thickness * 0.5;
-        Box::new(SlabY {
+impl<A: Axis, S: From<f64> + Real + Float> Slab<A, S> {
+    pub fn new(thickness: S) -> Box<Slab<A, S>> {
+        let d = thickness * From::from(0.5f64);
+        let mut p_neg = na::Point3::new(S::neg_infinity(), S::neg_infinity(), S::neg_infinity());
+        p_neg[A::value()] = -d;
+        let mut p_pos = na::Point3::new(S::infinity(), S::infinity(), S::infinity());
+        p_pos[A::value()] = d;
+
+        let _0: S = From::from(0f64);
+        let mut normal_pos = na::Vector3::new(_0, _0, _0);
+        let mut normal_neg = na::Vector3::new(_0, _0, _0);
+        normal_pos[A::value()] = From::from(1f64);
+        normal_neg[A::value()] = From::from(-1f64);
+
+        Box::new(Slab {
             distance_from_zero: d,
-            bbox: BoundingBox::<Float>::new(
-                Point::new(NEG_INFINITY, -d, NEG_INFINITY),
-                Point::new(INFINITY, d, INFINITY),
-            ),
+            bbox: BoundingBox::new(p_neg, p_pos),
+            normal_pos: normal_pos,
+            normal_neg: normal_neg,
+            _phantom: ::std::marker::PhantomData,
         })
     }
 }
 
-impl Object for SlabY {
-    fn approx_value(&self, p: Point, _: Float) -> Float {
-        return p.y.abs() - self.distance_from_zero;
+impl<A: 'static + Axis, S: Float + From<f64> + Real> Object<S> for Slab<A, S> {
+    fn approx_value(&self, p: na::Point3<S>, _: S) -> S {
+        return Float::abs(p[A::value()]) - self.distance_from_zero;
     }
-    fn bbox(&self) -> &BoundingBox<Float> {
+    fn bbox(&self) -> &BoundingBox<S> {
         &self.bbox
     }
-    fn normal(&self, p: Point) -> Vector {
-        if p.y > 0. {
-            return Vector::new(0., 1., 0.);
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+        if Float::is_sign_positive(p.x) {
+            return self.normal_pos.clone();
         } else {
-            return Vector::new(0., -1., 0.);
+            return self.normal_neg.clone();
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct SlabZ {
-    distance_from_zero: Float,
-    bbox: BoundingBox<Float>,
-}
-
-impl SlabZ {
-    pub fn new(thickness: Float) -> Box<SlabZ> {
-        let d = thickness * 0.5;
-        Box::new(SlabZ {
-            distance_from_zero: d,
-            bbox: BoundingBox::<Float>::new(
-                Point::new(NEG_INFINITY, NEG_INFINITY, -d),
-                Point::new(INFINITY, INFINITY, d),
-            ),
-        })
-    }
-}
-
-impl Object for SlabZ {
-    fn approx_value(&self, p: Point, _: Float) -> Float {
-        return p.z.abs() - self.distance_from_zero;
-    }
-    fn bbox(&self) -> &BoundingBox<Float> {
-        &self.bbox
-    }
-    fn normal(&self, p: Point) -> Vector {
-        if p.z > 0. {
-            return Vector::new(0., 0., 1.);
-        } else {
-            return Vector::new(0., 0., -1.);
-        }
-    }
-}
+pub type SlabX<S> = Slab<AxisX, S>;
+pub type SlabY<S> = Slab<AxisY, S>;
+pub type SlabZ<S> = Slab<AxisZ, S>;
