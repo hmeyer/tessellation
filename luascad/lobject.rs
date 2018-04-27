@@ -1,7 +1,8 @@
 use bbox::BoundingBox;
 use hlua;
 use std::sync::mpsc;
-use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Object, SlabZ, Sphere, Twister};
+use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Mesh, Object, SlabZ, Sphere,
+                         Twister};
 use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 #[derive(Clone, Debug)]
@@ -53,7 +54,7 @@ impl LObject {
     pub fn into_object(&self) -> Option<Box<Object<Float>>> {
         self.o.clone()
     }
-    pub fn export_factories<'a, L>(env: &mut hlua::LuaTable<L>, _console: mpsc::Sender<String>)
+    pub fn export_factories<'a, L>(env: &mut hlua::LuaTable<L>, console: mpsc::Sender<String>)
     where
         L: hlua::AsMutLua<'a>,
     {
@@ -169,30 +170,30 @@ impl LObject {
                 }
             }),
         );
-        // env.set(
-        //     "Mesh",
-        //     hlua::function1(move |filename: String| {
-        //         LObject {
-        //             o: match Mesh::new(&filename) {
-        //                 Ok(mesh) => {
-        //                     console
-        //                         .send(
-        //                             "Warning: Mesh support is currently horribly inefficient!"
-        //                                 .to_string(),
-        //                         )
-        //                         .unwrap();
-        //                     Some(mesh as Box<Object<Float>>)
-        //                 }
-        //                 Err(e) => {
-        //                     console
-        //                         .send(format!("Could not read mesh: {:}", e))
-        //                         .unwrap();
-        //                     None
-        //                 }
-        //             },
-        //         }
-        //     }),
-        // );
+        env.set(
+            "Mesh",
+            hlua::function1(move |filename: String| {
+                LObject {
+                    o: match Mesh::new(&filename) {
+                        Ok(mesh) => {
+                            console
+                                .send(
+                                    "Warning: Mesh support is currently horribly inefficient!"
+                                        .to_string(),
+                                )
+                                .unwrap();
+                            Some(mesh as Box<Object<Float>>)
+                        }
+                        Err(e) => {
+                            console
+                                .send(format!("Could not read mesh: {:}", e))
+                                .unwrap();
+                            None
+                        }
+                    },
+                }
+            }),
+        );
     }
     fn translate(&mut self, x: Float, y: Float, z: Float) -> LObject {
         LObject {

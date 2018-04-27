@@ -2,6 +2,7 @@ extern crate alga;
 #[cfg(not(test))]
 extern crate approx;
 #[cfg(test)]
+#[macro_use]
 extern crate approx;
 extern crate bbox;
 extern crate nalgebra as na;
@@ -32,9 +33,9 @@ pub use self::cylinder::{Cone, Cylinder};
 
 mod slab;
 pub use self::slab::{SlabX, SlabY, SlabZ};
-//
-// mod mesh;
-// pub use self::mesh::Mesh;
+
+mod mesh;
+pub use self::mesh::Mesh;
 
 pub struct PrimitiveParameters<S> {
     pub fade_range: S,
