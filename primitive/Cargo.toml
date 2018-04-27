@@ -1,6 +1,6 @@
 [package]
 name = "truescad_primitive"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -9,7 +9,6 @@ path = "lib.rs"
 
 [dependencies]
 nalgebra = "0.14"
-approx = "0.1.1"
 alga = "0.5"
 stl_io = "0.3"
 bbox = "0.7"
@@ -17,6 +16,7 @@ num-traits = "0.2"
 
 [dev-dependencies]
 bencher = "0.1.*"
+approx = "0.1"
 
 [[bench]]
 name = "objects"

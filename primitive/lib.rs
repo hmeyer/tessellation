@@ -1,6 +1,4 @@
 extern crate alga;
-#[cfg(not(test))]
-extern crate approx;
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
