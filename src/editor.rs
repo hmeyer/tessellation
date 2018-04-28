@@ -1,5 +1,6 @@
 use gtk::Inhibit;
 use gtk::traits::*;
+use implicit3d;
 use mesh_view;
 use object_widget;
 use settings;
@@ -8,7 +9,6 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::io::prelude::*;
 use truescad_luascad;
-use truescad_primitive;
 use truescad_tessellation::ManifoldDualContouring;
 use truescad_tessellation::Mesh;
 use truescad_types::Float;
@@ -88,7 +88,7 @@ impl Editor {
         );
         editor
     }
-    fn get_object(&self, msg: &mut Write) -> Option<Box<truescad_primitive::Object<Float>>> {
+    fn get_object(&self, msg: &mut Write) -> Option<Box<implicit3d::Object<Float>>> {
         let code_buffer = self.source_view.get_buffer().unwrap();
         let code_text = code_buffer
             .get_text(
@@ -103,7 +103,7 @@ impl Editor {
                 match maybe_object {
                     Some(mut o) => {
                         let s = settings::SettingsData::new();
-                        o.set_parameters(&truescad_primitive::PrimitiveParameters {
+                        o.set_parameters(&implicit3d::PrimitiveParameters {
                             fade_range: s.fade_range,
                             r_multiplier: s.r_multiplier,
                         });

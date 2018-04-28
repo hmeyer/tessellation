@@ -1,8 +1,8 @@
 use bbox::BoundingBox;
 use hlua;
+use implicit3d::{Bender, Cone, Cylinder, Intersection, Mesh, Object, SlabX, SlabY, SlabZ, Sphere,
+                 Twister};
 use std::sync::mpsc;
-use truescad_primitive::{Bender, Cone, Cylinder, Intersection, Mesh, Object, SlabZ, Sphere,
-                         Twister};
 use truescad_types::{Float, Point, Vector, INFINITY, NEG_INFINITY};
 
 #[derive(Clone, Debug)]
@@ -68,11 +68,7 @@ impl LObject {
                     }
                     LObject {
                         o: Some(Intersection::from_vec(
-                            vec![
-                                ::truescad_primitive::SlabX::new(x),
-                                ::truescad_primitive::SlabY::new(y),
-                                ::truescad_primitive::SlabZ::new(z),
-                            ],
+                            vec![SlabX::new(x), SlabY::new(y), SlabZ::new(z)],
                             smooth,
                         ).unwrap() as Box<Object<Float>>),
                     }

@@ -5,9 +5,9 @@
 // pub type Point = Point<float>;
 
 use alga::linear::Transformation;
+use implicit3d::Object;
 use rayon::prelude::*;
 use std::cmp;
-use truescad_primitive::Object;
 use truescad_types::{Float, Point, Ray, Transform, Vector};
 
 const EPSILON: Float = 0.003;

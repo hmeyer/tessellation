@@ -9,9 +9,7 @@ use truescad_types::Float;
 pub const USER_FUNCTION_NAME: &'static str = "__luscad_user_function__";
 pub const SANDBOX_ENV_NAME: &'static str = "__luascad_sandbox_env__";
 
-pub fn eval(
-    script: &str,
-) -> Result<(String, Option<Box<::truescad_primitive::Object<Float>>>), LuaError> {
+pub fn eval(script: &str) -> Result<(String, Option<Box<::implicit3d::Object<Float>>>), LuaError> {
     let mut result = None;
     let print_output;
     {

@@ -1,8 +1,8 @@
 extern crate bbox;
 #[macro_use]
 extern crate hlua;
+extern crate implicit3d;
 
-extern crate truescad_primitive;
 extern crate truescad_types;
 
 pub mod lobject;

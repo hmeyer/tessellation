@@ -1,5 +1,6 @@
 extern crate alga;
 extern crate bbox;
+extern crate implicit3d;
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;
@@ -7,7 +8,6 @@ extern crate num_traits;
 extern crate rand;
 extern crate rayon;
 extern crate time;
-extern crate truescad_primitive;
 extern crate truescad_types;
 
 

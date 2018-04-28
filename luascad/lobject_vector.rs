@@ -1,6 +1,6 @@
 use hlua;
+use implicit3d::{Intersection, Object, Union};
 use lobject::LObject;
-use truescad_primitive::{Intersection, Object, Union};
 use truescad_types::Float;
 
 // Struct to be used to construct boolean Objects.
