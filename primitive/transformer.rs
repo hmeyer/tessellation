@@ -13,7 +13,7 @@ pub struct AffineTransformer<S: Real> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: Real + Float + From<f64>> Object<S> for AffineTransformer<S> {
+impl<S: Real + Float + From<f32>> Object<S> for AffineTransformer<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
@@ -45,7 +45,7 @@ impl<S: Real + Float + From<f64>> Object<S> for AffineTransformer<S> {
         AffineTransformer::new_with_scaler(self.object.clone(), new_trans, self.scale_min)
     }
     fn scale(&self, s: na::Vector3<S>) -> Box<Object<S>> {
-        let _1: S = From::from(1f64);
+        let _1: S = From::from(1f32);
         let new_trans = self.transform
             .append_nonuniform_scaling(&na::Vector3::new(_1 / s.x, _1 / s.y, _1 / s.z));
         AffineTransformer::new_with_scaler(
@@ -56,12 +56,12 @@ impl<S: Real + Float + From<f64>> Object<S> for AffineTransformer<S> {
     }
 }
 
-impl<S: Real + Float + From<f64>> AffineTransformer<S> {
+impl<S: Real + Float + From<f32>> AffineTransformer<S> {
     fn identity(o: Box<Object<S>>) -> Box<Object<S>> {
         AffineTransformer::new(o, na::Matrix4::identity())
     }
     fn new(o: Box<Object<S>>, t: na::Matrix4<S>) -> Box<AffineTransformer<S>> {
-        let _1: S = From::from(1f64);
+        let _1: S = From::from(1f32);
         AffineTransformer::new_with_scaler(o, t, _1)
     }
     fn new_with_scaler(
@@ -121,7 +121,7 @@ mod test {
         }
     }
 
-    impl<S: ::std::fmt::Debug + Real + Float + From<f64>> Object<S> for MockObject<S> {
+    impl<S: ::std::fmt::Debug + Real + Float + From<f32>> Object<S> for MockObject<S> {
         fn approx_value(&self, _: na::Point3<S>, _: S) -> S {
             self.value
         }

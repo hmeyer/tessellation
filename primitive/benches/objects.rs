@@ -1,21 +1,28 @@
+extern crate alga;
 #[macro_use]
 extern crate bencher;
+extern crate nalgebra;
+extern crate num_traits;
 extern crate truescad_primitive;
-extern crate truescad_types;
+use alga::general::Real;
 use bencher::Bencher;
+use nalgebra as na;
+use num_traits::{Float, FloatConst};
+use std::fmt::Debug;
 use truescad_primitive::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere, Twister};
-use truescad_types::Float;
+
 
 const STEPS: usize = 50;
 
 
-fn evaluate(obj: &Object) -> ::truescad_types::Float {
-    let mut p = ::truescad_types::Point::new(0., 0., obj.bbox().min.z);
-    let xd = (obj.bbox().max.x - obj.bbox().min.x) / (STEPS as Float);
-    let yd = (obj.bbox().max.y - obj.bbox().min.y) / (STEPS as Float);
-    let zd = (obj.bbox().max.z - obj.bbox().min.z) / (STEPS as Float);
-    let slack = xd.min(yd.min(zd)) / 10.;
-    let mut result = 0.;
+fn evaluate<S: From<f32> + Debug + Float + Real>(obj: &Object<S>) -> S {
+    let _0 = From::from(0f32);
+    let mut p = na::Point3::new(_0, _0, obj.bbox().min.z);
+    let xd = (obj.bbox().max.x - obj.bbox().min.x) / From::from(STEPS as f32);
+    let yd = (obj.bbox().max.y - obj.bbox().min.y) / From::from(STEPS as f32);
+    let zd = (obj.bbox().max.z - obj.bbox().min.z) / From::from(STEPS as f32);
+    let slack = Float::min(xd, Float::min(yd, zd)) / From::from(10f32);
+    let mut result = _0;
     for _ in 0..STEPS {
         p.y = obj.bbox().min.y;
         for _ in 0..STEPS {
@@ -31,12 +38,13 @@ fn evaluate(obj: &Object) -> ::truescad_types::Float {
     return result;
 }
 
-fn normals(obj: &Object) -> ::truescad_types::Vector {
-    let mut p = ::truescad_types::Point::new(0., 0., obj.bbox().min.z);
-    let xd = (obj.bbox().max.x - obj.bbox().min.x) / (STEPS as Float);
-    let yd = (obj.bbox().max.y - obj.bbox().min.y) / (STEPS as Float);
-    let zd = (obj.bbox().max.z - obj.bbox().min.z) / (STEPS as Float);
-    let mut result = ::truescad_types::Vector::new(0., 0., 0.);
+fn normals<S: 'static + From<f32> + Debug + Float + Real>(obj: &Object<S>) -> na::Vector3<S> {
+    let _0 = From::from(0f32);
+    let mut p = na::Point3::new(_0, _0, obj.bbox().min.z);
+    let xd = (obj.bbox().max.x - obj.bbox().min.x) / From::from(STEPS as f32);
+    let yd = (obj.bbox().max.y - obj.bbox().min.y) / From::from(STEPS as f32);
+    let zd = (obj.bbox().max.z - obj.bbox().min.z) / From::from(STEPS as f32);
+    let mut result = na::Vector3::new(_0, _0, _0);
     for _ in 0..STEPS {
         p.y = obj.bbox().min.y;
         for _ in 0..STEPS {
@@ -52,58 +60,87 @@ fn normals(obj: &Object) -> ::truescad_types::Vector {
     return result;
 }
 
-fn sphere(b: &mut Bencher) {
-    let object = Sphere::new(1.0);
-    b.iter(|| evaluate(&*object as &Object));
+fn sphere<S: From<f32> + Debug + Float + Real>(b: &mut Bencher) {
+    let object = Sphere::new(From::from(1f32));
+    b.iter(|| evaluate(&*object as &Object<S>));
 }
-fn sphere_normals(b: &mut Bencher) {
-    let object = Sphere::new(1.0);
-    b.iter(|| normals(&*object as &Object));
-}
-
-fn create_cube() -> Box<Object> {
-    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap()
-        as Box<Object>
+fn sphere_normals<S: From<f32> + Debug + Float + Real>(b: &mut Bencher) {
+    let object = Sphere::new(From::from(1f32));
+    b.iter(|| normals(&*object as &Object<S>));
 }
 
-fn cube(b: &mut Bencher) {
+fn create_cube<S: From<f32> + Debug + Float + Real>() -> Box<Object<S>> {
+    let _0 = From::from(0f32);
+    let _1 = From::from(1f32);
+    Intersection::from_vec(vec![SlabX::new(_1), SlabY::new(_1), SlabZ::new(_1)], _0).unwrap()
+        as Box<Object<S>>
+}
+
+fn cube<S: From<f32> + Debug + Float + Real>(b: &mut Bencher) {
     let object = create_cube();
-    b.iter(|| evaluate(&*object as &Object));
+    b.iter(|| evaluate(&*object as &Object<S>));
 }
-fn cube_normals(b: &mut Bencher) {
+fn cube_normals<S: From<f32> + Debug + Float + Real>(b: &mut Bencher) {
     let object = create_cube();
-    b.iter(|| normals(&*object as &Object));
+    b.iter(|| normals(&*object as &Object<S>));
 }
 
-fn create_hollow_cube() -> Box<Object> {
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap()
-        as Box<Object>
+fn create_hollow_cube<S: From<f32> + Debug + Float + FloatConst + Real>() -> Box<Object<S>> {
+    Intersection::difference_from_vec(
+        vec![create_cube(), Sphere::new(From::from(0.5f32))],
+        From::from(0.2f32),
+    ).unwrap() as Box<Object<S>>
 }
 
-fn hollow_cube(b: &mut Bencher) {
+fn hollow_cube<S: From<f32> + Debug + Float + FloatConst + Real>(b: &mut Bencher) {
     let object = create_hollow_cube();
-    b.iter(|| evaluate(&*object as &Object));
+    b.iter(|| evaluate(&*object as &Object<S>));
 }
-fn hollow_cube_normals(b: &mut Bencher) {
+fn hollow_cube_normals<S: From<f32> + Debug + Float + FloatConst + Real>(b: &mut Bencher) {
     let object = create_hollow_cube();
-    b.iter(|| normals(&*object as &Object));
+    b.iter(|| normals(&*object as &Object<S>));
 }
 
-fn twisted_cube(b: &mut Bencher) {
-    let object = Twister::new(create_cube(), 4.);
-    b.iter(|| evaluate(&*object as &Object));
+fn twisted_cube<S: From<f32> + Debug + Float + FloatConst + Real>(b: &mut Bencher) {
+    let object = Twister::new(create_cube(), From::from(4f32));
+    b.iter(|| evaluate(&*object as &Object<S>));
 }
-fn twisted_cube_normals(b: &mut Bencher) {
-    let object = Twister::new(create_cube(), 4.);
-    b.iter(|| normals(&*object as &Object));
+fn twisted_cube_normals<S: From<f32> + Debug + Float + FloatConst + Real>(b: &mut Bencher) {
+    let object = Twister::new(create_cube(), From::from(4f32));
+    b.iter(|| normals(&*object as &Object<S>));
 }
 
-benchmark_group!(bench_values, sphere, cube, hollow_cube, twisted_cube);
 benchmark_group!(
-    bench_normals,
-    sphere_normals,
-    cube_normals,
-    hollow_cube_normals,
-    twisted_cube_normals
+    bench_values_f32,
+    sphere<f32>,
+    cube<f32>,
+    hollow_cube<f32>,
+    twisted_cube<f32>
 );
-benchmark_main!(bench_values, bench_normals);
+benchmark_group!(
+    bench_values_f64,
+    sphere<f64>,
+    cube<f64>,
+    hollow_cube<f64>,
+    twisted_cube<f64>
+);
+benchmark_group!(
+    bench_normals_f32,
+    sphere_normals<f32>,
+    cube_normals<f32>,
+    hollow_cube_normals<f32>,
+    twisted_cube_normals<f32>
+);
+benchmark_group!(
+    bench_normals_f64,
+    sphere_normals<f64>,
+    cube_normals<f64>,
+    hollow_cube_normals<f64>,
+    twisted_cube_normals<f64>
+);
+benchmark_main!(
+    bench_values_f32,
+    bench_normals_f32,
+    bench_values_f64,
+    bench_normals_f64
+);

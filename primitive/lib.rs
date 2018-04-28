@@ -40,11 +40,11 @@ pub struct PrimitiveParameters<S> {
     pub r_multiplier: S,
 }
 
-pub const ALWAYS_PRECISE: f64 = 1.;
-pub const EPSILON: f64 = 1e-10;
+pub const ALWAYS_PRECISE: f32 = 1.;
+pub const EPSILON: f32 = 1e-10;
 
 
-pub fn normal_from_object<S: Debug + Real + Float + From<f64>>(
+pub fn normal_from_object<S: Debug + Real + Float + From<f32>>(
     f: &Object<S>,
     p: na::Point3<S>,
 ) -> na::Vector3<S> {
@@ -61,7 +61,7 @@ pub fn normal_from_object<S: Debug + Real + Float + From<f64>>(
     na::Vector3::<S>::new(dx, dy, dz).normalize()
 }
 
-pub trait Object<S: Real + Float + From<f64>>
+pub trait Object<S: Real + Float + From<f32>>
     : ObjectClone<S> + Debug + Sync + Send {
     fn bbox(&self) -> &BoundingBox<S>;
     fn set_bbox(&mut self, _: BoundingBox<S>) {
@@ -93,7 +93,7 @@ pub trait ObjectClone<S> {
     fn clone_box(&self) -> Box<Object<S>>;
 }
 
-impl<S: Real + Float + From<f64>, T> ObjectClone<S> for T
+impl<S: Real + Float + From<f32>, T> ObjectClone<S> for T
 where
     T: 'static + Object<S> + Clone,
 {

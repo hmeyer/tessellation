@@ -18,7 +18,7 @@ impl<S: Real + Float> Sphere<S> {
     }
 }
 
-impl<S: ::std::fmt::Debug + Real + Float + From<f64>> Object<S> for Sphere<S> {
+impl<S: ::std::fmt::Debug + Real + Float + From<f32>> Object<S> for Sphere<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {

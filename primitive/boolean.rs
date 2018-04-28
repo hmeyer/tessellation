@@ -3,8 +3,8 @@ use alga::general::Real;
 use na;
 use num_traits::Float;
 
-pub const FADE_RANGE: f64 = 0.1;
-pub const R_MULTIPLIER: f64 = 1.0;
+pub const FADE_RANGE: f32 = 0.1;
+pub const R_MULTIPLIER: f32 = 1.0;
 
 #[derive(Clone, Debug)]
 pub struct Union<S: Real> {
@@ -15,7 +15,7 @@ pub struct Union<S: Real> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: Real + Float + From<f64>> Union<S> {
+impl<S: Real + Float + From<f32>> Union<S> {
     pub fn from_vec(mut v: Vec<Box<Object<S>>>, r: S) -> Option<Box<Object<S>>> {
         match v.len() {
             0 => None,
@@ -25,7 +25,7 @@ impl<S: Real + Float + From<f64>> Union<S> {
                     .fold(BoundingBox::<S>::neg_infinity(), |union_box, x| {
                         union_box.union(x.bbox())
                     })
-                    .dilate(r * From::from(0.2f64)); // dilate by some factor of r
+                    .dilate(r * From::from(0.2f32)); // dilate by some factor of r
                 Some(Box::new(Union {
                     objs: v,
                     r: r,
@@ -38,7 +38,7 @@ impl<S: Real + Float + From<f64>> Union<S> {
     }
 }
 
-impl<S: Real + From<f64> + Float> Object<S> for Union<S> {
+impl<S: Real + From<f32> + Float> Object<S> for Union<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
@@ -79,7 +79,7 @@ impl<S: Real + From<f64> + Float> Object<S> for Union<S> {
                 }
             },
         );
-        let _1: S = From::from(1f64);
+        let _1: S = From::from(1f32);
         match Float::abs(v0.1 - v1.1) {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (_1 - self.fade_range)) => {
@@ -106,7 +106,7 @@ pub struct Intersection<S: Real> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: Real + Float + From<f64>> Intersection<S> {
+impl<S: Real + Float + From<f32>> Intersection<S> {
     pub fn from_vec(mut v: Vec<Box<Object<S>>>, r: S) -> Option<Box<Object<S>>> {
         match v.len() {
             0 => None,
@@ -139,7 +139,7 @@ impl<S: Real + Float + From<f64>> Intersection<S> {
     }
 }
 
-impl<S: Real + From<f64> + Float> Object<S> for Intersection<S> {
+impl<S: Real + From<f32> + Float> Object<S> for Intersection<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
@@ -180,7 +180,7 @@ impl<S: Real + From<f64> + Float> Object<S> for Intersection<S> {
                 }
             },
         );
-        let _1: S = From::from(1f64);
+        let _1: S = From::from(1f32);
         match Float::abs(v0.1 - v1.1) {
             // if they are close together, calc normal from full object
             diff if diff < (self.exact_range * (_1 - self.fade_range)) => {
@@ -204,7 +204,7 @@ pub struct Negation<S: Real> {
     infinity_bbox: BoundingBox<S>,
 }
 
-impl<S: Real + Float + From<f64>> Negation<S> {
+impl<S: Real + Float + From<f32>> Negation<S> {
     pub fn from_vec(v: Vec<Box<Object<S>>>) -> Vec<Box<Object<S>>> {
         v.iter()
             .map(|o| {
@@ -217,12 +217,12 @@ impl<S: Real + Float + From<f64>> Negation<S> {
     }
 }
 
-impl<S: Real + From<f64> + Float> Object<S> for Negation<S> {
+impl<S: Real + From<f32> + Float> Object<S> for Negation<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         -self.object.approx_value(p, slack)
     }
     fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
-        let _n1: S = From::from(-1f64);
+        let _n1: S = From::from(-1f32);
         self.object.normal(p) * _n1
     }
     fn bbox(&self) -> &BoundingBox<S> {
@@ -230,7 +230,7 @@ impl<S: Real + From<f64> + Float> Object<S> for Negation<S> {
     }
 }
 
-fn rvmin<S: Float + From<f64>>(v: &[S], r: S, exact_range: S) -> S {
+fn rvmin<S: Float + From<f32>>(v: &[S], r: S, exact_range: S) -> S {
     let mut close_min = false;
     let minimum = v.iter().fold(S::infinity(), |min, x| {
         if x < &min {
@@ -251,15 +251,15 @@ fn rvmin<S: Float + From<f64>>(v: &[S], r: S, exact_range: S) -> S {
         return minimum;
     }
     let min_plus_r = minimum + r;
-    let r4 = r / From::from(4f64);
+    let r4 = r / From::from(4f32);
     // Inpired by http://iquilezles.org/www/articles/smin/smin.htm
     let exp_sum = v.iter()
         .filter(|&x| x < &min_plus_r)
-        .fold(From::from(0f64), |sum: S, x| sum + (-*x / r4).exp());
+        .fold(From::from(0f32), |sum: S, x| sum + (-*x / r4).exp());
     return Float::ln(exp_sum) * -r4;
 }
 
-fn rvmax<S: Float + From<f64>>(v: &[S], r: S, exact_range: S) -> S {
+fn rvmax<S: Float + From<f32>>(v: &[S], r: S, exact_range: S) -> S {
     let mut close_max = false;
     let maximum = v.iter().fold(S::neg_infinity(), |max, x| {
         if x > &max {
@@ -280,9 +280,9 @@ fn rvmax<S: Float + From<f64>>(v: &[S], r: S, exact_range: S) -> S {
         return maximum;
     }
     let max_minus_r = maximum - r;
-    let r4 = r / From::from(4f64);
+    let r4 = r / From::from(4f32);
     let exp_sum = v.iter()
         .filter(|&x| x > &max_minus_r)
-        .fold(From::from(0f64), |sum: S, x| sum + (*x / r4).exp());
+        .fold(From::from(0f32), |sum: S, x| sum + (*x / r4).exp());
     return Float::ln(exp_sum) * r4;
 }

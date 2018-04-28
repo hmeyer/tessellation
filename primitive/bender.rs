@@ -2,7 +2,7 @@ use {BoundingBox, Object, PrimitiveParameters};
 use alga::general::Real;
 use alga::linear::Similarity;
 use na;
-use num_traits::Float;
+use num_traits::{Float, FloatConst};
 
 #[derive(Clone, Debug)]
 pub struct Bender<S: Real> {
@@ -11,7 +11,7 @@ pub struct Bender<S: Real> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: Real + From<f64> + Float> Object<S> for Bender<S> {
+impl<S: Real + From<f32> + Float + ::num_traits::FloatConst> Object<S> for Bender<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
@@ -29,7 +29,7 @@ impl<S: Real + From<f64> + Float> Object<S> for Bender<S> {
             // let width_for_full_rotation = self.width_scaler * 2. * PI;
             // let x_scale = circumference / width_for_full_rotation;
             let x_scale = r / self.width_scaler;
-            let x_scaler = Float::min(x_scale, From::from(1f64));
+            let x_scaler = Float::min(x_scale, From::from(1f32));
 
             obj_p.x *= self.width_scaler;
             self.object.approx_value(obj_p, slack / x_scaler) * x_scaler
@@ -51,14 +51,14 @@ impl<S: Real + From<f64> + Float> Object<S> for Bender<S> {
     }
 }
 
-impl<S: Real + Float + From<f64>> Bender<S> {
+impl<S: Real + Float + FloatConst + From<f32>> Bender<S> {
     // o: Object to be twisted, w: width (x) for one full rotation
     pub fn new(o: Box<Object<S>>, w: S) -> Box<Bender<S>> {
         let bbox = BoundingBox::new(
             na::Point3::new(-o.bbox().max.y, -o.bbox().max.y, o.bbox().min.z),
             na::Point3::new(o.bbox().max.y, o.bbox().max.y, o.bbox().max.z),
         );
-        let _2pi: S = From::from(2. * ::std::f64::consts::PI);
+        let _2pi: S = S::PI() * From::from(2.);
         Box::new(Bender {
             object: o,
             width_scaler: w / _2pi,
@@ -72,7 +72,7 @@ impl<S: Real + Float + From<f64>> Bender<S> {
     }
     fn tilt_normal(&self, mut normal: na::Vector3<S>, polar_p: na::Point3<S>) -> na::Vector3<S> {
         let r = polar_p.y;
-        let _2pi: S = From::from(2. * ::std::f64::consts::PI);
+        let _2pi: S = S::PI() * From::from(2.);
         let circumference = _2pi * r;
         let width_for_one_full_rotation = self.width_scaler * _2pi;
         let scale_along_x = circumference / width_for_one_full_rotation;
@@ -81,8 +81,7 @@ impl<S: Real + Float + From<f64>> Bender<S> {
     }
     fn bend_normal(&self, v: na::Vector3<S>, polar_p: na::Point3<S>) -> na::Vector3<S> {
         let v = self.tilt_normal(v, polar_p);
-        let _pi: S = From::from(::std::f64::consts::PI);
-        let phi = polar_p.x + _pi;
+        let phi = polar_p.x + S::PI();
         let v2 = ::na::Vector2::new(v.x, v.y);
         let trans = ::na::Rotation2::new(phi);
         let rv2 = trans.rotate_vector(&v2);

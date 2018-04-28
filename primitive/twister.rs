@@ -12,7 +12,7 @@ pub struct Twister<S: Real> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: Real + From<f64> + Float> Object<S> for Twister<S> {
+impl<S: Real + From<f32> + Float + ::num_traits::FloatConst> Object<S> for Twister<S> {
     fn approx_value(&self, p: na::Point3<S>, slack: S) -> S {
         let approx = self.bbox.distance(p);
         if approx <= slack {
@@ -34,10 +34,10 @@ impl<S: Real + From<f64> + Float> Object<S> for Twister<S> {
     }
 }
 
-impl<S: Real + Float + From<f64>> Twister<S> {
+impl<S: Real + Float + ::num_traits::FloatConst + From<f32>> Twister<S> {
     // o: Object to be twisted, h: height for one full rotation
     pub fn new(o: Box<Object<S>>, h: S) -> Box<Twister<S>> {
-        let _2pi: S = From::from(2. * ::std::f64::consts::PI);
+        let _2pi: S = S::PI() * From::from(2.);
         let mx = Float::max(Float::abs(o.bbox().min.x), Float::abs(o.bbox().max.x));
         let my = Float::max(Float::abs(o.bbox().min.y), Float::abs(o.bbox().max.y));
         let r = Float::hypot(mx, my);
@@ -46,7 +46,7 @@ impl<S: Real + Float + From<f64>> Twister<S> {
         let tan_a = Float::abs(h) / (_2pi * r);
         // The scaler is 1 / sin(a)
         // sin(atan(x)) =   x / sqrt(x^2 + 1)
-        let _1: S = From::from(1f64);
+        let _1: S = From::from(1f32);
         let scaler = tan_a / Float::sqrt(tan_a * tan_a + _1);
 
         let bbox = BoundingBox::<S>::new(

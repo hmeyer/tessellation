@@ -40,19 +40,19 @@ pub struct Slab<A: Axis, S: Real> {
     _phantom: ::std::marker::PhantomData<A>,
 }
 
-impl<A: Axis, S: From<f64> + Real + Float> Slab<A, S> {
+impl<A: Axis, S: From<f32> + Real + Float> Slab<A, S> {
     pub fn new(thickness: S) -> Box<Slab<A, S>> {
-        let d = thickness * From::from(0.5f64);
+        let d = thickness * From::from(0.5f32);
         let mut p_neg = na::Point3::new(S::neg_infinity(), S::neg_infinity(), S::neg_infinity());
         p_neg[A::value()] = -d;
         let mut p_pos = na::Point3::new(S::infinity(), S::infinity(), S::infinity());
         p_pos[A::value()] = d;
 
-        let _0: S = From::from(0f64);
+        let _0: S = From::from(0f32);
         let mut normal_pos = na::Vector3::new(_0, _0, _0);
         let mut normal_neg = na::Vector3::new(_0, _0, _0);
-        normal_pos[A::value()] = From::from(1f64);
-        normal_neg[A::value()] = From::from(-1f64);
+        normal_pos[A::value()] = From::from(1f32);
+        normal_neg[A::value()] = From::from(-1f32);
 
         Box::new(Slab {
             distance_from_zero: d,
@@ -64,7 +64,7 @@ impl<A: Axis, S: From<f64> + Real + Float> Slab<A, S> {
     }
 }
 
-impl<A: 'static + Axis, S: Float + From<f64> + Real> Object<S> for Slab<A, S> {
+impl<A: 'static + Axis, S: Float + From<f32> + Real> Object<S> for Slab<A, S> {
     fn approx_value(&self, p: na::Point3<S>, _: S) -> S {
         return Float::abs(p[A::value()]) - self.distance_from_zero;
     }
