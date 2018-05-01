@@ -1,40 +1,53 @@
+extern crate alga;
 #[macro_use]
 extern crate bencher;
-extern crate truescad_primitive;
+extern crate implicit3d;
+extern crate num_traits;
 extern crate truescad_tessellation;
-extern crate truescad_types;
+use alga::general::Real;
 use bencher::Bencher;
-use truescad_primitive::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
+use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
+use num_traits::Float;
+use truescad_tessellation::CeilAsUSize;
 
-fn create_cube() -> Box<Object> {
-    Intersection::from_vec(vec![SlabX::new(1.), SlabY::new(1.), SlabZ::new(1.)], 0.).unwrap()
-        as Box<Object>
+fn create_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
+    let _0: S = From::from(0f32);
+    let _1: S = From::from(1f32);
+    Intersection::from_vec(vec![SlabX::new(_1), SlabY::new(_1), SlabZ::new(_1)], _0).unwrap()
+        as Box<Object<S>>
 }
 
-fn create_hollow_cube() -> Box<Object> {
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(0.5)], 0.2).unwrap()
-        as Box<Object>
+fn create_hollow_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
+    let _02: S = From::from(0.2f32);
+    let _05: S = From::from(0.5f32);
+    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(_05)], _02).unwrap()
+        as Box<Object<S>>
 }
 
-fn creat_tessellation() -> truescad_tessellation::ManifoldDualContouringImpl {
-    let mut object = create_hollow_cube();
-    object.set_parameters(&truescad_primitive::PrimitiveParameters {
-        fade_range: 0.1,
-        r_multiplier: 1.0,
+fn create_tessellation<S: Real + CeilAsUSize + From<f32>>(
+) -> truescad_tessellation::ManifoldDualContouringImpl<S> {
+    let mut object = create_hollow_cube::<S>();
+    object.set_parameters(&implicit3d::PrimitiveParameters {
+        fade_range: From::from(0.1),
+        r_multiplier: From::from(1.0),
     });
-    return truescad_tessellation::ManifoldDualContouringImpl::new(object, 0.02, 0.1);
+    return truescad_tessellation::ManifoldDualContouringImpl::new(
+        object,
+        From::from(0.02),
+        From::from(0.1),
+    );
 }
 
-fn sample_value_grid(b: &mut Bencher) {
-    let tess = creat_tessellation();
+fn sample_value_grid<S: Real + CeilAsUSize + From<f32>>(b: &mut Bencher) {
+    let tess = create_tessellation::<S>();
     b.iter(|| {
         let mut my_tess = tess.clone();
         my_tess.tessellation_step1()
     });
 }
 
-fn compact_value_grid(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn compact_value_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     b.iter(|| {
         let mut my_tess = tess.clone();
@@ -42,8 +55,8 @@ fn compact_value_grid(b: &mut Bencher) {
     });
 }
 
-fn generate_edge_grid(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn generate_edge_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     tess.compact_value_grid();
     b.iter(|| {
@@ -52,8 +65,8 @@ fn generate_edge_grid(b: &mut Bencher) {
     });
 }
 
-fn generate_leaf_vertices(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn generate_leaf_vertices<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -63,8 +76,8 @@ fn generate_leaf_vertices(b: &mut Bencher) {
     });
 }
 
-fn subsample_octtree(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -84,8 +97,8 @@ fn subsample_octtree(b: &mut Bencher) {
     });
 }
 
-fn solve_qefs(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -105,8 +118,8 @@ fn solve_qefs(b: &mut Bencher) {
     });
 }
 
-fn compute_quad(b: &mut Bencher) {
-    let mut tess = creat_tessellation();
+fn compute_quad<S: From<f32> + CeilAsUSize + Real + Float>(b: &mut Bencher) {
+    let mut tess = create_tessellation::<S>();
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -132,13 +145,23 @@ fn compute_quad(b: &mut Bencher) {
 
 
 benchmark_group!(
-    bench_tessellation,
-    sample_value_grid,
-    compact_value_grid,
-    generate_edge_grid,
-    generate_leaf_vertices,
-    subsample_octtree,
-    solve_qefs,
-    compute_quad
+    bench_tessellation_f32,
+    sample_value_grid<f32>,
+    compact_value_grid<f32>,
+    generate_edge_grid<f32>,
+    generate_leaf_vertices<f32>,
+    subsample_octtree<f32>,
+    solve_qefs<f32>,
+    compute_quad<f32>
 );
-benchmark_main!(bench_tessellation);
+benchmark_group!(
+    bench_tessellation_f64,
+    sample_value_grid<f64>,
+    compact_value_grid<f64>,
+    generate_edge_grid<f64>,
+    generate_leaf_vertices<f64>,
+    subsample_octtree<f64>,
+    solve_qefs<f64>,
+    compute_quad<f64>
+);
+benchmark_main!(bench_tessellation_f32, bench_tessellation_f64);

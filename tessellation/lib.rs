@@ -8,7 +8,6 @@ extern crate num_traits;
 extern crate rand;
 extern crate rayon;
 extern crate time;
-extern crate truescad_types;
 
 
 use alga::general::Real;
@@ -31,6 +30,22 @@ pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::manifold_dual_contouring::ManifoldDualContouringImpl;
 pub use self::manifold_dual_contouring::subsample_octtree;
 
+
+pub trait CeilAsUSize: ::num_traits::Float {
+    fn ceil_as_usize(self) -> usize;
+}
+
+impl CeilAsUSize for f32 {
+    fn ceil_as_usize(self) -> usize {
+        self.ceil() as usize
+    }
+}
+
+impl CeilAsUSize for f64 {
+    fn ceil_as_usize(self) -> usize {
+        self.ceil() as usize
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Mesh<S> {
