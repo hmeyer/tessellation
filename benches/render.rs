@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate bencher;
+extern crate implicit3d;
 extern crate truescad;
 extern crate truescad_luascad;
-extern crate truescad_primitive;
 extern crate truescad_types;
 use bencher::Bencher;
 
@@ -21,7 +21,7 @@ fn render(b: &mut Bencher) {
     object
         .as_mut()
         .unwrap()
-        .set_parameters(&truescad_primitive::PrimitiveParameters {
+        .set_parameters(&implicit3d::PrimitiveParameters {
             fade_range: 0.1,
             r_multiplier: 1.0,
         });
