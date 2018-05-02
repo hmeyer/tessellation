@@ -1,11 +1,9 @@
-use super::CeilAsUSize;
-use super::Mesh;
+use super::{CeilAsUSize, ImplicitFunction, Mesh};
 use Plane;
 use alga::general::Real;
 use bbox::BoundingBox;
 use bitset::BitSet;
 use cell_configs::CELL_CONFIGS;
-use implicit3d::{normal_from_object, Object};
 use na;
 use num_traits::Float;
 use qef;
@@ -200,17 +198,17 @@ impl EdgeIndex {
     }
 }
 
-pub struct ManifoldDualContouring<S: Real + CeilAsUSize + From<f32>> {
-    impl_: ManifoldDualContouringImpl<S>,
+pub struct ManifoldDualContouring<'a, S: Real + CeilAsUSize + From<f32>> {
+    impl_: ManifoldDualContouringImpl<'a, S>,
 }
-impl<S: Real + CeilAsUSize + From<f32>> ManifoldDualContouring<S> {
+impl<'a, S: Real + CeilAsUSize + From<f32>> ManifoldDualContouring<'a, S> {
     // Constructor
-    // obj: Object to tessellate
+    // f: implicit function to tessellate
     // res: resolution
     // relative_error: acceptable error threshold when simplifying the mesh.
-    pub fn new(obj: Box<Object<S>>, res: S, relative_error: S) -> ManifoldDualContouring<S> {
+    pub fn new(f: &'a ImplicitFunction<S>, res: S, relative_error: S) -> ManifoldDualContouring<S> {
         ManifoldDualContouring {
-            impl_: ManifoldDualContouringImpl::new(obj, res, relative_error),
+            impl_: ManifoldDualContouringImpl::new(f, res, relative_error),
         }
     }
     pub fn tessellate(&mut self) -> Option<Mesh<S>> {
@@ -219,8 +217,8 @@ impl<S: Real + CeilAsUSize + From<f32>> ManifoldDualContouring<S> {
 }
 
 #[derive(Clone)]
-pub struct ManifoldDualContouringImpl<S: Real> {
-    object: Box<Object<S>>,
+pub struct ManifoldDualContouringImpl<'a, S: Real> {
+    function: &'a ImplicitFunction<S>,
     origin: na::Point3<S>,
     dim: [usize; 3],
     mesh: RefCell<Mesh<S>>,
@@ -426,16 +424,20 @@ impl Timer {
     }
 }
 
-impl<S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<S> {
+impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'a, S> {
     // Constructor
-    // obj: Object to tessellate
+    // f: function to tessellate
     // res: resolution
     // relative_error: acceptable error threshold when simplifying the mesh.
-    pub fn new(obj: Box<Object<S>>, res: S, relative_error: S) -> ManifoldDualContouringImpl<S> {
+    pub fn new(
+        f: &'a ImplicitFunction<S>,
+        res: S,
+        relative_error: S,
+    ) -> ManifoldDualContouringImpl<'a, S> {
         let _1: S = From::from(1f32);
-        let bbox = obj.bbox().dilate(_1 + res * From::from(1.1f32));
+        let bbox = f.bbox().dilate(_1 + res * From::from(1.1f32));
         ManifoldDualContouringImpl {
-            object: obj,
+            function: f,
             origin: bbox.min,
             dim: [
                 (bbox.dim()[0] / res).ceil_as_usize(),
@@ -458,7 +460,7 @@ impl<S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<S> {
         println!(
             "ManifoldDualContouringImpl: res: {:} {:?}",
             self.res,
-            self.object.bbox()
+            self.function.bbox()
         );
         loop {
             match self.try_tessellate() {
@@ -486,7 +488,7 @@ impl<S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<S> {
     pub fn tessellation_step1(&mut self) -> Option<DualContouringError> {
         let maxdim = cmp::max(self.dim[0], cmp::max(self.dim[1], self.dim[2]));
         let origin = self.origin;
-        let origin_value = self.object.approx_value(origin, self.res);
+        let origin_value = self.function.value(origin);
 
         return self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value);
     }
@@ -582,7 +584,7 @@ impl<S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<S> {
                     let value = if midx == idx {
                         val
                     } else {
-                        self.object.approx_value(mpos, self.res)
+                        self.function.value(mpos)
                     };
 
                     if value == From::from(0f32) {
@@ -982,12 +984,12 @@ impl<S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<S> {
             return Some(Plane {
                 p: *result,
                 // We need a precise normal here.
-                n: normal_from_object(&*self.object, *result),
+                n: self.function.normal(*result),
             });
         }
         // Linear interpolation of the zero crossing.
         let n = a + (b - a) * (Float::abs(av) / Float::abs(bv - av));
-        let nv = self.object.approx_value(n, self.res);
+        let nv = self.function.value(n);
 
         if Float::signum(av) != Float::signum(nv) {
             return self.find_zero(a, av, n, nv);

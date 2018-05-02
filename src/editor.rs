@@ -1,7 +1,9 @@
+use bbox;
 use gtk::Inhibit;
 use gtk::traits::*;
 use implicit3d;
 use mesh_view;
+use na;
 use object_widget;
 use settings;
 use sourceview::{BufferExt, LanguageManagerExt, StyleSchemeManagerExt};
@@ -9,8 +11,7 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::io::prelude::*;
 use truescad_luascad;
-use truescad_tessellation::ManifoldDualContouring;
-use truescad_tessellation::Mesh;
+use truescad_tessellation::{ImplicitFunction, ManifoldDualContouring, Mesh};
 use truescad_types::Float;
 
 #[derive(Clone)]
@@ -20,6 +21,23 @@ pub struct Editor {
     buffer: Option<::sourceview::Buffer>,
 }
 
+struct ObjectAdapter<S> {
+    implicit: Box<implicit3d::Object<S>>,
+    resolution: S,
+}
+
+impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
+    for ObjectAdapter<S> {
+    fn bbox(&self) -> &bbox::BoundingBox<S> {
+        self.implicit.bbox()
+    }
+    fn value(&self, p: na::Point3<S>) -> S {
+        self.implicit.approx_value(p, self.resolution)
+    }
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+        self.implicit.normal(p)
+    }
+}
 
 impl Editor {
     pub fn new(xw: &object_widget::ObjectWidget, debug_buffer: &::gtk::TextBuffer) -> Editor {
@@ -144,9 +162,16 @@ impl Editor {
         let maybe_obj = self.get_object(&mut ::std::io::stdout());
         if let Some(obj) = maybe_obj {
             let s = settings::SettingsData::new();
-            let mesh =
-                ManifoldDualContouring::new(obj, s.tessellation_resolution, s.tessellation_error)
-                    .tessellate();
+            let adapter = ObjectAdapter {
+                implicit: obj,
+                resolution: s.tessellation_resolution,
+            };
+
+            let mesh = ManifoldDualContouring::new(
+                &adapter,
+                s.tessellation_resolution,
+                s.tessellation_error,
+            ).tessellate();
             if let Some(ref mesh) = mesh {
                 mesh_view::show_mesh(&mesh);
             }

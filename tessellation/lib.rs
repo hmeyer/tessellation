@@ -1,6 +1,5 @@
 extern crate alga;
 extern crate bbox;
-extern crate implicit3d;
 #[macro_use]
 extern crate lazy_static;
 extern crate nalgebra as na;
@@ -30,6 +29,12 @@ pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::manifold_dual_contouring::ManifoldDualContouringImpl;
 pub use self::manifold_dual_contouring::subsample_octtree;
 
+
+pub trait ImplicitFunction<S: Debug + Real> {
+    fn bbox(&self) -> &bbox::BoundingBox<S>;
+    fn value(&self, p: na::Point3<S>) -> S;
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S>;
+}
 
 pub trait CeilAsUSize: ::num_traits::Float {
     fn ceil_as_usize(self) -> usize;
