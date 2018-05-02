@@ -1,4 +1,3 @@
-use bbox;
 use gtk::Inhibit;
 use gtk::traits::*;
 use implicit3d;
@@ -28,7 +27,7 @@ struct ObjectAdapter<S> {
 
 impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
     for ObjectAdapter<S> {
-    fn bbox(&self) -> &bbox::BoundingBox<S> {
+    fn bbox(&self) -> &::implicit3d::BoundingBox<S> {
         self.implicit.bbox()
     }
     fn value(&self, p: na::Point3<S>) -> S {

@@ -6,7 +6,6 @@
 //         unused_import_braces, unused_qualifications)]
 
 extern crate alga;
-extern crate bbox;
 extern crate cairo;
 extern crate gdk;
 extern crate gtk;
