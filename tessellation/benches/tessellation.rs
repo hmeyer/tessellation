@@ -2,13 +2,34 @@ extern crate alga;
 #[macro_use]
 extern crate bencher;
 extern crate implicit3d;
+extern crate nalgebra;
 extern crate num_traits;
 extern crate truescad_tessellation;
 use alga::general::Real;
 use bencher::Bencher;
 use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
+use nalgebra as na;
 use num_traits::Float;
-use truescad_tessellation::CeilAsUSize;
+use truescad_tessellation::{CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
+
+
+struct ObjectAdaptor<S: Real> {
+    implicit: Box<implicit3d::Object<S>>,
+    resolution: S,
+}
+
+impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
+    for ObjectAdaptor<S> {
+    fn bbox(&self) -> &::implicit3d::BoundingBox<S> {
+        self.implicit.bbox()
+    }
+    fn value(&self, p: na::Point3<S>) -> S {
+        self.implicit.approx_value(p, self.resolution)
+    }
+    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+        self.implicit.normal(p)
+    }
+}
 
 fn create_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
     let _0: S = From::from(0f32);
@@ -24,22 +45,21 @@ fn create_hollow_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
         as Box<Object<S>>
 }
 
-fn create_tessellation<S: Real + CeilAsUSize + From<f32>>(
-) -> truescad_tessellation::ManifoldDualContouringImpl<S> {
+fn create_object<S: Real + CeilAsUSize + From<f32>>() -> ObjectAdaptor<S> {
     let mut object = create_hollow_cube::<S>();
     object.set_parameters(&implicit3d::PrimitiveParameters {
         fade_range: From::from(0.1),
         r_multiplier: From::from(1.0),
     });
-    return truescad_tessellation::ManifoldDualContouringImpl::new(
-        object,
-        From::from(0.02),
-        From::from(0.1),
-    );
+    ObjectAdaptor {
+        implicit: object,
+        resolution: From::from(0.02),
+    }
 }
 
 fn sample_value_grid<S: Real + CeilAsUSize + From<f32>>(b: &mut Bencher) {
-    let tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     b.iter(|| {
         let mut my_tess = tess.clone();
         my_tess.tessellation_step1()
@@ -47,7 +67,8 @@ fn sample_value_grid<S: Real + CeilAsUSize + From<f32>>(b: &mut Bencher) {
 }
 
 fn compact_value_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     b.iter(|| {
         let mut my_tess = tess.clone();
@@ -56,7 +77,8 @@ fn compact_value_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher
 }
 
 fn generate_edge_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     tess.compact_value_grid();
     b.iter(|| {
@@ -66,7 +88,8 @@ fn generate_edge_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher
 }
 
 fn generate_leaf_vertices<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -77,7 +100,8 @@ fn generate_leaf_vertices<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Ben
 }
 
 fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -98,7 +122,8 @@ fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher)
 }
 
 fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
@@ -119,7 +144,8 @@ fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
 }
 
 fn compute_quad<S: From<f32> + CeilAsUSize + Real + Float>(b: &mut Bencher) {
-    let mut tess = create_tessellation::<S>();
+    let o = create_object::<S>();
+    let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
     tess.compact_value_grid();
     tess.generate_edge_grid();
