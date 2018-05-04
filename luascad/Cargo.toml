@@ -9,7 +9,6 @@ path = "lib.rs"
 
 [dependencies]
 hlua = "0.3"
-bbox = "0.7"
-implicit3d = "0.8"
+implicit3d = "0.9"
 
 truescad_types = { path = "../types", version = "0.2.1" }

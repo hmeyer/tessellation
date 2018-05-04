@@ -435,7 +435,8 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
         relative_error: S,
     ) -> ManifoldDualContouringImpl<'a, S> {
         let _1: S = From::from(1f32);
-        let bbox = f.bbox().dilate(_1 + res * From::from(1.1f32));
+        let mut bbox = f.bbox().clone();
+        bbox.dilate(_1 + res * From::from(1.1f32));
         ManifoldDualContouringImpl {
             function: f,
             origin: bbox.min,
@@ -828,7 +829,7 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
                     index: idx,
                     qef: RefCell::new(qef::Qef::new(
                         &tangent_planes,
-                        BoundingBox::new(cell_origin, cell_origin + cell_size),
+                        BoundingBox::new(&cell_origin, &(cell_origin + cell_size)),
                     )),
                     neighbors: neighbors,
                     parent: Cell::new(None),

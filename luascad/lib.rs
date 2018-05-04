@@ -1,4 +1,3 @@
-extern crate bbox;
 #[macro_use]
 extern crate hlua;
 extern crate implicit3d;

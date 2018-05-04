@@ -70,7 +70,7 @@ impl Renderer {
         loop {
             cr.dir = cr.dir.normalize();
             cr.origin = cr.origin + cr.dir * value;
-            value = obj.approx_value(cr.origin, self.approx_slack);
+            value = obj.approx_value(&cr.origin, self.approx_slack);
             iter += 1;
             if value > self.maxval {
                 return (iter, 0.);
@@ -80,7 +80,7 @@ impl Renderer {
                 break;
             }
         }
-        let norm = obj.normal(cr.origin);
+        let norm = obj.normal(&cr.origin);
         let dot = norm.dot(light_dir);
         if dot < 0. {
             return (iter, 0.);
@@ -109,7 +109,7 @@ impl Renderer {
 
 
 
-            let origin_value = my_obj.approx_value(ray.origin, self.approx_slack);
+            let origin_value = my_obj.approx_value(&ray.origin, self.approx_slack);
 
 
             let mut rows: Vec<_> = buf.chunks_mut((width * 4) as usize).enumerate().collect();

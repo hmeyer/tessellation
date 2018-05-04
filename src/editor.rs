@@ -31,10 +31,10 @@ impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> Implicit
         self.implicit.bbox()
     }
     fn value(&self, p: na::Point3<S>) -> S {
-        self.implicit.approx_value(p, self.resolution)
+        self.implicit.approx_value(&p, self.resolution)
     }
     fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
-        self.implicit.normal(p)
+        self.implicit.normal(&p)
     }
 }
 

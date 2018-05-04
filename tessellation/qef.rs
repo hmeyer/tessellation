@@ -79,7 +79,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
 
         // If solution is not contained in cell bbox, start a binary search for a proper solution.
         // NAN-solution will also not be contained in the bbox.
-        if !self.bbox.contains(na::Point3::new(
+        if !self.bbox.contains(&na::Point3::new(
             self.solution.x,
             self.solution.y,
             self.solution.z,
@@ -87,7 +87,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
             let accuracy = (self.bbox.max.x - self.bbox.min.x) / convert::From::from(100.0);
             self.solution = self.search_solution(accuracy, &mut self.bbox.clone(), &ma);
             debug_assert!(
-                self.bbox.dilate(accuracy).contains(na::Point3::new(
+                self.bbox.dilate(accuracy).contains(&na::Point3::new(
                     self.solution.x,
                     self.solution.y,
                     self.solution.z
