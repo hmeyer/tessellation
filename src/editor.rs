@@ -20,13 +20,13 @@ pub struct Editor {
     buffer: Option<::sourceview::Buffer>,
 }
 
-struct ObjectAdapter<S> {
+struct ObjectAdaptor<S> {
     implicit: Box<implicit3d::Object<S>>,
     resolution: S,
 }
 
 impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
-    for ObjectAdapter<S> {
+    for ObjectAdaptor<S> {
     fn bbox(&self) -> &::implicit3d::BoundingBox<S> {
         self.implicit.bbox()
     }
@@ -161,13 +161,13 @@ impl Editor {
         let maybe_obj = self.get_object(&mut ::std::io::stdout());
         if let Some(obj) = maybe_obj {
             let s = settings::SettingsData::new();
-            let adapter = ObjectAdapter {
+            let adaptor = ObjectAdaptor {
                 implicit: obj,
                 resolution: s.tessellation_resolution,
             };
 
             let mesh = ManifoldDualContouring::new(
-                &adapter,
+                &adaptor,
                 s.tessellation_resolution,
                 s.tessellation_error,
             ).tessellate();
