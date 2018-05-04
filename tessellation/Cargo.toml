@@ -1,6 +1,6 @@
 [package]
 name = "truescad_tessellation"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [lib]
@@ -12,7 +12,7 @@ alga = "0.5"
 nalgebra = "0.14"
 rand = "0.3"
 time = "0.1"
-rayon = "0.7"
+rayon = "1.0"
 lazy_static = "0.2.8"
 bbox = "0.8"
 num-traits = "0.2"

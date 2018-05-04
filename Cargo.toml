@@ -1,6 +1,6 @@
 [package]
 name = "truescad"
-version = "0.3.5"
+version = "0.3.6"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 [dependencies]
@@ -10,7 +10,7 @@ gdk = "0.7.*"
 cairo-rs = "0.3.*"
 nalgebra = "0.14"
 alga = "0.5"
-rayon = "0.7.*"
+rayon = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
