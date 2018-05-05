@@ -1,11 +1,17 @@
 [package]
-name = "truescad_tessellation"
-version = "0.4.2"
+name = "tessellation"
+version = "0.5.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
+description = "3d tessellation library."
+repository = "https://github.com/hmeyer/tessellation"
+readme = "README.md"
+keywords = ["tessellation", "3d", "manifold", "dual-contouring"]
+license = "GPL-3.0"
+
 [lib]
-name = "truescad_tessellation"
-path = "lib.rs"
+name = "tessellation"
+path = "src/lib.rs"
 
 [dependencies]
 alga = "0.5"
@@ -23,5 +29,5 @@ bencher = "0.1"
 implicit3d = "0.8"
 
 [[bench]]
-name = "tessellation"
+name = "src"
 harness = false
