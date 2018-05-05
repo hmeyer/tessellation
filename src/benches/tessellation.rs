@@ -4,13 +4,13 @@ extern crate bencher;
 extern crate implicit3d;
 extern crate nalgebra;
 extern crate num_traits;
-extern crate truescad_tessellation;
+extern crate tessellation;
 use alga::general::Real;
 use bencher::Bencher;
 use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
 use nalgebra as na;
 use num_traits::Float;
-use truescad_tessellation::{CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
+use tessellation::{CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
 
 
 struct ObjectAdaptor<S: Real> {
