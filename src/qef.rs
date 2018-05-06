@@ -175,7 +175,7 @@ mod tests {
                     n: na::Vector3::new(2., 3., 4.).normalize(),
                 },
             ],
-            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 1., 1.)),
+            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(
@@ -202,7 +202,7 @@ mod tests {
                     n: na::Vector3::new(1., 1., 0.).normalize(),
                 },
             ],
-            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 1., 1.)),
+            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(relative_eq!(qef.solution, &na::Vector3::new(0., 0., 0.)));
@@ -225,7 +225,7 @@ mod tests {
                     n: na::Vector3::new(0., 0., 1.),
                 },
             ],
-            BoundingBox::<f64>::new(na::Point3::new(0., 0., 0.), na::Point3::new(1., 2., 3.)),
+            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 2., 3.)),
         );
         qef.solve();
         let expected_solution = na::Vector3::new(1., 2., 3.);

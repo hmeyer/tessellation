@@ -489,7 +489,7 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
     pub fn tessellation_step1(&mut self) -> Option<DualContouringError> {
         let maxdim = cmp::max(self.dim[0], cmp::max(self.dim[1], self.dim[2]));
         let origin = self.origin;
-        let origin_value = self.function.value(origin);
+        let origin_value = self.function.value(&origin);
 
         return self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value);
     }
@@ -585,7 +585,7 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
                     let value = if midx == idx {
                         val
                     } else {
-                        self.function.value(mpos)
+                        self.function.value(&mpos)
                     };
 
                     if value == From::from(0f32) {
@@ -619,13 +619,13 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
         let keys_to_remove: Vec<_> = value_grid
             .par_iter()
             .filter(|&(idx, &v)| {
-                for z in 0..3 {
-                    for y in 0..3 {
-                        for x in 0..3 {
-                            let mut adjacent_idx = idx.clone();
-                            adjacent_idx[0] += x - 1;
-                            adjacent_idx[1] += y - 1;
-                            adjacent_idx[2] += z - 1;
+                let xstart = idx[0].max(2);
+                let ystart = idx[1].max(2);
+                let zstart = idx[2].max(2);
+                for z in zstart..3 {
+                    for y in ystart..3 {
+                        for x in xstart..3 {
+                            let mut adjacent_idx = [idx[0] + x - 1, idx[1] + y - 1, idx[2] + z - 1];
                             if let Some(&adjacent_value) = value_grid.get(&adjacent_idx) {
                                 if Float::signum(v) != Float::signum(adjacent_value) {
                                     // Don't collect indexes with
@@ -985,12 +985,12 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
             return Some(Plane {
                 p: *result,
                 // We need a precise normal here.
-                n: self.function.normal(*result),
+                n: self.function.normal(result),
             });
         }
         // Linear interpolation of the zero crossing.
         let n = a + (b - a) * (Float::abs(av) / Float::abs(bv - av));
-        let nv = self.function.value(n);
+        let nv = self.function.value(&n);
 
         if Float::signum(av) != Float::signum(nv) {
             return self.find_zero(a, av, n, nv);
