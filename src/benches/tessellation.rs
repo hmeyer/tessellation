@@ -10,7 +10,7 @@ use bencher::Bencher;
 use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
 use nalgebra as na;
 use num_traits::Float;
-use tessellation::{CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
+use tessellation::{BoundingBox, CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
 
 
 struct ObjectAdaptor<S: Real> {
@@ -20,13 +20,13 @@ struct ObjectAdaptor<S: Real> {
 
 impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
     for ObjectAdaptor<S> {
-    fn bbox(&self) -> &::implicit3d::BoundingBox<S> {
+    fn bbox(&self) -> &BoundingBox<S> {
         self.implicit.bbox()
     }
-    fn value(&self, p: na::Point3<S>) -> S {
+    fn value(&self, p: &na::Point3<S>) -> S {
         self.implicit.approx_value(p, self.resolution)
     }
-    fn normal(&self, p: na::Point3<S>) -> na::Vector3<S> {
+    fn normal(&self, p: &na::Point3<S>) -> na::Vector3<S> {
         self.implicit.normal(p)
     }
 }
@@ -111,8 +111,7 @@ fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher)
     b.iter(|| {
         let mut my_tess = tess.clone();
         loop {
-            let next =
-                truescad_tessellation::subsample_octtree(my_tess.vertex_octtree.last().unwrap());
+            let next = tessellation::subsample_octtree(my_tess.vertex_octtree.last().unwrap());
             if next.len() == my_tess.vertex_octtree.last().unwrap().len() {
                 break;
             }
@@ -131,7 +130,7 @@ fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
     tess.vertex_index_map = index_map;
     tess.vertex_octtree.push(leafs);
     loop {
-        let next = truescad_tessellation::subsample_octtree(tess.vertex_octtree.last().unwrap());
+        let next = tessellation::subsample_octtree(tess.vertex_octtree.last().unwrap());
         if next.len() == tess.vertex_octtree.last().unwrap().len() {
             break;
         }
@@ -153,7 +152,7 @@ fn compute_quad<S: From<f32> + CeilAsUSize + Real + Float>(b: &mut Bencher) {
     tess.vertex_index_map = index_map;
     tess.vertex_octtree.push(leafs);
     loop {
-        let next = truescad_tessellation::subsample_octtree(tess.vertex_octtree.last().unwrap());
+        let next = tessellation::subsample_octtree(tess.vertex_octtree.last().unwrap());
         if next.len() == tess.vertex_octtree.last().unwrap().len() {
             break;
         }
