@@ -21,7 +21,7 @@ impl UnitSphere {
   fn new() -> UnitSphere {
     UnitSphere {
       bbox: tessellation::BoundingBox::new(&na::Point3::new(-1., -1., -1.),
-                                           &na::Point3::new( 1.,  1.,  1.)) };
+                                           &na::Point3::new( 1.,  1.,  1.)) }
   }
 }
 
