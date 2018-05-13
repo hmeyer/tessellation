@@ -1,8 +1,8 @@
-use Plane;
 use alga::general::Real;
 use bbox::BoundingBox;
 use na;
 use num_traits::Float;
+use plane::Plane;
 use std::convert;
 use std::fmt::Debug;
 
@@ -154,7 +154,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
 #[cfg(test)]
 mod tests {
     use super::{BoundingBox, Qef};
-    use super::super::Plane;
+    use super::Plane;
     use na;
 
     #[test]

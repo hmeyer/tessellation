@@ -1,11 +1,12 @@
-use super::{CeilAsUSize, ImplicitFunction, Mesh};
-use Plane;
+use super::{AsUSize, ImplicitFunction};
 use alga::general::Real;
 use bbox::BoundingBox;
 use bitset::BitSet;
 use cell_configs::CELL_CONFIGS;
+use mesh::Mesh;
 use na;
 use num_traits::Float;
+use plane::Plane;
 use qef;
 use rand;
 use rayon::prelude::*;
@@ -198,10 +199,11 @@ impl EdgeIndex {
     }
 }
 
-pub struct ManifoldDualContouring<'a, S: Real + CeilAsUSize + From<f32>> {
+#[derive(Clone)]
+pub struct ManifoldDualContouring<'a, S: Real + Float + AsUSize + From<f32>> {
     impl_: ManifoldDualContouringImpl<'a, S>,
 }
-impl<'a, S: Real + CeilAsUSize + From<f32>> ManifoldDualContouring<'a, S> {
+impl<'a, S: Real + Float + AsUSize + From<f32>> ManifoldDualContouring<'a, S> {
     // Constructor
     // f: implicit function to tessellate
     // res: resolution
@@ -424,7 +426,7 @@ impl Timer {
     }
 }
 
-impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'a, S> {
+impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S> {
     // Constructor
     // f: function to tessellate
     // res: resolution
@@ -441,9 +443,9 @@ impl<'a, S: From<f32> + Real + Float + CeilAsUSize> ManifoldDualContouringImpl<'
             function: f,
             origin: bbox.min,
             dim: [
-                (bbox.dim()[0] / res).ceil_as_usize(),
-                (bbox.dim()[1] / res).ceil_as_usize(),
-                (bbox.dim()[2] / res).ceil_as_usize(),
+                Real::ceil(bbox.dim()[0] / res).as_usize(),
+                Real::ceil(bbox.dim()[1] / res).as_usize(),
+                Real::ceil(bbox.dim()[2] / res).as_usize(),
             ],
             mesh: RefCell::new(Mesh {
                 vertices: Vec::new(),

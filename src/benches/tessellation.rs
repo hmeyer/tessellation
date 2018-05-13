@@ -10,7 +10,7 @@ use bencher::Bencher;
 use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
 use nalgebra as na;
 use num_traits::Float;
-use tessellation::{BoundingBox, CeilAsUSize, ImplicitFunction, ManifoldDualContouringImpl};
+use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouring};
 
 
 struct ObjectAdaptor<S: Real> {
