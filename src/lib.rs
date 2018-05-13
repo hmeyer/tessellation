@@ -62,7 +62,7 @@ mod qef;
 mod mesh;
 mod plane;
 
-pub use self::manifold_dual_contouring::ManifoldDualContouring;
+pub use self::manifold_dual_contouring::ManifoldDualContouringImpl;
 // This is just exposed for the bench test - do not use!
 pub use self::manifold_dual_contouring::subsample_octtree;
 

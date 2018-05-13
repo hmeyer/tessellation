@@ -10,7 +10,7 @@ use bencher::Bencher;
 use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
 use nalgebra as na;
 use num_traits::Float;
-use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouring};
+use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouringImpl};
 
 
 struct ObjectAdaptor<S: Real> {
@@ -45,7 +45,7 @@ fn create_hollow_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
         as Box<Object<S>>
 }
 
-fn create_object<S: Real + CeilAsUSize + From<f32>>() -> ObjectAdaptor<S> {
+fn create_object<S: Real + AsUSize + Float + From<f32>>() -> ObjectAdaptor<S> {
     let mut object = create_hollow_cube::<S>();
     object.set_parameters(&implicit3d::PrimitiveParameters {
         fade_range: From::from(0.1),
@@ -57,7 +57,7 @@ fn create_object<S: Real + CeilAsUSize + From<f32>>() -> ObjectAdaptor<S> {
     }
 }
 
-fn sample_value_grid<S: Real + CeilAsUSize + From<f32>>(b: &mut Bencher) {
+fn sample_value_grid<S: Real + AsUSize + Float + From<f32>>(b: &mut Bencher) {
     let o = create_object::<S>();
     let tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     b.iter(|| {
@@ -66,7 +66,7 @@ fn sample_value_grid<S: Real + CeilAsUSize + From<f32>>(b: &mut Bencher) {
     });
 }
 
-fn compact_value_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+fn compact_value_grid<S: AsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
@@ -76,7 +76,7 @@ fn compact_value_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher
     });
 }
 
-fn generate_edge_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+fn generate_edge_grid<S: AsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
@@ -87,7 +87,7 @@ fn generate_edge_grid<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher
     });
 }
 
-fn generate_leaf_vertices<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
+fn generate_leaf_vertices<S: AsUSize + Real + Float + From<f32>>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
@@ -99,7 +99,7 @@ fn generate_leaf_vertices<S: CeilAsUSize + Real + Float + From<f32>>(b: &mut Ben
     });
 }
 
-fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
+fn subsample_octtree<S: Real + Float + From<f32> + AsUSize>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
@@ -120,7 +120,7 @@ fn subsample_octtree<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher)
     });
 }
 
-fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
+fn solve_qefs<S: Real + Float + From<f32> + AsUSize>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
@@ -142,7 +142,7 @@ fn solve_qefs<S: Real + Float + From<f32> + CeilAsUSize>(b: &mut Bencher) {
     });
 }
 
-fn compute_quad<S: From<f32> + CeilAsUSize + Real + Float>(b: &mut Bencher) {
+fn compute_quad<S: From<f32> + AsUSize + Real + Float>(b: &mut Bencher) {
     let o = create_object::<S>();
     let mut tess = ManifoldDualContouringImpl::new(&o, From::from(0.02), From::from(0.1));
     tess.tessellation_step1();
