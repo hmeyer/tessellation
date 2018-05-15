@@ -63,6 +63,8 @@ mod mesh;
 mod plane;
 
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
+pub use self::mesh::Mesh;
+
 
 /// Trait to be implemented by functions that should be tessellated.
 pub trait ImplicitFunction<S: Debug + Real> {

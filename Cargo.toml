@@ -1,6 +1,6 @@
 [package]
 name = "tessellation"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 description = "3d tessellation library."
