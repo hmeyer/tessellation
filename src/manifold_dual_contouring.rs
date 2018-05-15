@@ -621,12 +621,13 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
         let keys_to_remove: Vec<_> = value_grid
             .par_iter()
             .filter(|&(idx, &v)| {
-                let xstart = idx[0].max(2);
-                let ystart = idx[1].max(2);
-                let zstart = idx[2].max(2);
-                for z in zstart..3 {
-                    for y in ystart..3 {
-                        for x in xstart..3 {
+                if idx[0] == 0 || idx[1] == 0 || idx[2] == 0 {
+                    // This grid cell does not have neighbors in some directions. Ignore.
+                    return false;
+                }
+                for z in 0..3 {
+                    for y in 0..3 {
+                        for x in 0..3 {
                             let mut adjacent_idx = [idx[0] + x - 1, idx[1] + y - 1, idx[2] + z - 1];
                             if let Some(&adjacent_value) = value_grid.get(&adjacent_idx) {
                                 if Float::signum(v) != Float::signum(adjacent_value) {
