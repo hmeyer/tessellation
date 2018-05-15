@@ -62,18 +62,26 @@ mod qef;
 mod mesh;
 mod plane;
 
-pub use self::manifold_dual_contouring::ManifoldDualContouringImpl;
-// This is just exposed for the bench test - do not use!
-pub use self::manifold_dual_contouring::subsample_octtree;
+pub use self::manifold_dual_contouring::ManifoldDualContouring;
 
-
+/// Trait to be implemented by functions that should be tessellated.
 pub trait ImplicitFunction<S: Debug + Real> {
+    /// Return a Bounding Box, which is essential, so the algorithm knows where to search for
+    /// surfaces.
     fn bbox(&self) -> &BoundingBox<S>;
+    /// Evaluate the function on p and return the value. A value of zero signifies that p is on the
+    /// surface to be tessellated. A negative value means p in inside the object. A positive value
+    /// means p is outside the object.
+    /// The magnitude of value must be continuous. Furthermore value has to be equal or greater
+    /// than the euclidean distance between p and the surface.
     fn value(&self, p: &na::Point3<S>) -> S;
+    /// Compute the normal of the function at p.
     fn normal(&self, p: &na::Point3<S>) -> na::Vector3<S>;
 }
 
+/// Trait which allows to convert Self to usize, since To<usize> is not implemented by f32 and f64.
 pub trait AsUSize {
+    /// Convert Self to usize.
     fn as_usize(self) -> usize;
 }
 

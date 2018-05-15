@@ -199,27 +199,9 @@ impl EdgeIndex {
     }
 }
 
+/// Struct containing all the intermediary state for the different stages of tessellation.
 #[derive(Clone)]
-pub struct ManifoldDualContouring<'a, S: Real + Float + AsUSize + From<f32>> {
-    impl_: ManifoldDualContouringImpl<'a, S>,
-}
-impl<'a, S: Real + Float + AsUSize + From<f32>> ManifoldDualContouring<'a, S> {
-    // Constructor
-    // f: implicit function to tessellate
-    // res: resolution
-    // relative_error: acceptable error threshold when simplifying the mesh.
-    pub fn new(f: &'a ImplicitFunction<S>, res: S, relative_error: S) -> ManifoldDualContouring<S> {
-        ManifoldDualContouring {
-            impl_: ManifoldDualContouringImpl::new(f, res, relative_error),
-        }
-    }
-    pub fn tessellate(&mut self) -> Option<Mesh<S>> {
-        self.impl_.tessellate()
-    }
-}
-
-#[derive(Clone)]
-pub struct ManifoldDualContouringImpl<'a, S: Real> {
+pub struct ManifoldDualContouring<'a, S: Real> {
     function: &'a ImplicitFunction<S>,
     origin: na::Point3<S>,
     dim: [usize; 3],
@@ -227,12 +209,12 @@ pub struct ManifoldDualContouringImpl<'a, S: Real> {
     res: S,
     error: S,
     value_grid: HashMap<Index, S>,
-    pub edge_grid: RefCell<HashMap<EdgeIndex, Plane<S>>>,
+    edge_grid: RefCell<HashMap<EdgeIndex, Plane<S>>>,
     // The Vertex Octtree. vertex_octtree[0] stores the leaf vertices. vertex_octtree[1] the next
     // layer and so on. vertex_octtree.len() is the depth of the octtree.
-    pub vertex_octtree: Vec<Vec<Vertex<S>>>,
+    vertex_octtree: Vec<Vec<Vertex<S>>>,
     // Map from VertexIndex to vertex_octtree[0]
-    pub vertex_index_map: HashMap<VertexIndex, usize>,
+    vertex_index_map: HashMap<VertexIndex, usize>,
 }
 
 // Returns the next largest power of 2
@@ -352,7 +334,7 @@ fn subsample_euler_characteristics<S: Real>(
     (intersections, euler)
 }
 
-pub fn subsample_octtree<S: Real + Float + From<f32>>(base: &Vec<Vertex<S>>) -> Vec<Vertex<S>> {
+fn subsample_octtree<S: Real + Float + From<f32>>(base: &Vec<Vertex<S>>) -> Vec<Vertex<S>> {
     let mut result = Vec::new();
     for (i, vertex) in base.iter().enumerate() {
         if vertex.parent.get() == None {
@@ -426,20 +408,20 @@ impl Timer {
     }
 }
 
-impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S> {
-    // Constructor
-    // f: function to tessellate
-    // res: resolution
-    // relative_error: acceptable error threshold when simplifying the mesh.
+impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
+    /// Constructor
+    /// f: function to tessellate
+    /// res: resolution
+    /// relative_error: acceptable error threshold when simplifying the mesh.
     pub fn new(
         f: &'a ImplicitFunction<S>,
         res: S,
         relative_error: S,
-    ) -> ManifoldDualContouringImpl<'a, S> {
+    ) -> ManifoldDualContouring<'a, S> {
         let _1: S = From::from(1f32);
         let mut bbox = f.bbox().clone();
         bbox.dilate(_1 + res * From::from(1.1f32));
-        ManifoldDualContouringImpl {
+        ManifoldDualContouring {
             function: f,
             origin: bbox.min,
             dim: [
@@ -459,9 +441,10 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
             vertex_index_map: HashMap::new(),
         }
     }
+    /// Tessellate the given function.
     pub fn tessellate(&mut self) -> Option<Mesh<S>> {
         println!(
-            "ManifoldDualContouringImpl: res: {:} {:?}",
+            "ManifoldDualContouring: res: {:} {:?}",
             self.res,
             self.function.bbox()
         );
@@ -488,7 +471,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
         }
     }
 
-    pub fn tessellation_step1(&mut self) -> Option<DualContouringError> {
+    fn tessellation_step1(&mut self) -> Option<DualContouringError> {
         let maxdim = cmp::max(self.dim[0], cmp::max(self.dim[1], self.dim[2]));
         let origin = self.origin;
         let origin_value = self.function.value(&origin);
@@ -615,7 +598,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
     // Delete all values from value grid that do not have a value of opposing signum in any
     // neighboring index.
     // This might reduces memory usage by ~10x.
-    pub fn compact_value_grid(&mut self) {
+    fn compact_value_grid(&mut self) {
         // Collect all indexes to remove.
         let value_grid = &mut self.value_grid;
         let keys_to_remove: Vec<_> = value_grid
@@ -650,7 +633,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
     }
 
     // Store crossing positions of edges in edge_grid
-    pub fn generate_edge_grid(&mut self) {
+    fn generate_edge_grid(&mut self) {
         let mut edge_grid = self.edge_grid.borrow_mut();
         for (&point_idx, &point_value) in &self.value_grid {
             for &edge in [Edge::A, Edge::B, Edge::C].iter() {
@@ -684,7 +667,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
     // Solves QEFs in vertex stack, starting at the highest level, down all layers until the qef
     // error is below threshold.
     // Returns the number of solved QEFs.
-    pub fn solve_qefs(&self) -> usize {
+    fn solve_qefs(&self) -> usize {
         let mut num_solved = 0;
         if let Some(top_layer) = self.vertex_octtree.last() {
             for i in 0..top_layer.len() {
@@ -725,7 +708,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
 
     // Generates leaf vertices along with a map that points VertexIndices to the index in the leaf
     // vertex vec.
-    pub fn generate_leaf_vertices(&self) -> (Vec<Vertex<S>>, HashMap<VertexIndex, usize>) {
+    fn generate_leaf_vertices(&self) -> (Vec<Vertex<S>>, HashMap<VertexIndex, usize>) {
         let mut index_map = HashMap::new();
         let mut vertices = Vec::new();
         for edge_index in self.edge_grid.borrow().keys() {
@@ -931,7 +914,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouringImpl<'a, S
     }
 
     // Compute a quad for the given edge and append it to the list.
-    pub fn compute_quad(&self, edge_index: EdgeIndex) {
+    fn compute_quad(&self, edge_index: EdgeIndex) {
         debug_assert!((edge_index.edge as usize) < 4);
         debug_assert!(edge_index.index.iter().all(|&i| i > 0));
 
