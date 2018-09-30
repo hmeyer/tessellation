@@ -49,22 +49,20 @@ extern crate rand;
 extern crate rayon;
 extern crate time;
 
-
 use alga::general::Real;
 pub use bbox::BoundingBox;
 use std::fmt::Debug;
 
 mod bitset;
-mod vertex_index;
-mod manifold_dual_contouring;
 mod cell_configs;
-mod qef;
+mod manifold_dual_contouring;
 mod mesh;
 mod plane;
+mod qef;
+mod vertex_index;
 
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
-
 
 /// Trait to be implemented by functions that should be tessellated.
 pub trait ImplicitFunction<S: Debug + Real> {
@@ -102,3 +100,13 @@ impl AsUSize for f64 {
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn empty() {
+        assert!(true);
+    }
+}

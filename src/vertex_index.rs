@@ -1,6 +1,5 @@
 use bitset::BitSet;
 
-
 //  Edge indexes
 //
 //      +-------9-------+
@@ -17,12 +16,14 @@ use bitset::BitSet;
 
 // Face order X0, X1, Y0, Y1, Z0, Z1
 lazy_static! {
-    pub static ref EDGES_ON_FACE: [BitSet; 6] = [BitSet::from_4bits(1, 2, 7, 8),
-                                                 BitSet::from_4bits(4, 5, 10, 11),
-                                                 BitSet::from_4bits(0, 2, 5, 6),
-                                                 BitSet::from_4bits(3, 8, 9, 11),
-                                                 BitSet::from_4bits(0, 1, 3, 4),
-                                                 BitSet::from_4bits(6, 7, 9, 10)];
+    pub static ref EDGES_ON_FACE: [BitSet; 6] = [
+        BitSet::from_4bits(1, 2, 7, 8),
+        BitSet::from_4bits(4, 5, 10, 11),
+        BitSet::from_4bits(0, 2, 5, 6),
+        BitSet::from_4bits(3, 8, 9, 11),
+        BitSet::from_4bits(0, 1, 3, 4),
+        BitSet::from_4bits(6, 7, 9, 10)
+    ];
 }
 
 fn egdes_on_neighbor(neighbor_index: usize, edges: BitSet) -> BitSet {
@@ -83,8 +84,8 @@ pub enum VarIndex {
 
 #[cfg(test)]
 mod tests {
-    use super::{VertexIndex, EDGES_ON_FACE};
     use super::super::bitset::BitSet;
+    use super::{VertexIndex, EDGES_ON_FACE};
 
     #[test]
     fn neighbor() {

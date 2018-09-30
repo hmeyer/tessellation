@@ -1,6 +1,5 @@
 use bitset::BitSet;
 
-
 // CELL_CONFIGS stores the different cell configurations as suggested by Nielson.
 // Each cell has 8 corners. Each corner can be either inside (true) or outside (false).
 // This results in 256 different configurations. Due to symmetry those can be reduced to 23
@@ -270,7 +269,6 @@ pub const CELL_CONFIGS: &'static [&'static [BitSet]] = &[
 
 // Following is the code used to generate this table.
 
-
 //  Corner indexes
 //
 //      6---------------7
@@ -417,3 +415,13 @@ pub const CELL_CONFIGS: &'static [&'static [BitSet]] = &[
 //     }
 //     None
 // }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn empty() {
+        assert!(true);
+    }
+}

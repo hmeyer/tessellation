@@ -1,6 +1,6 @@
 [package]
 name = "tessellation"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 description = "3d tessellation library."
@@ -14,19 +14,19 @@ name = "tessellation"
 path = "src/lib.rs"
 
 [dependencies]
-alga = "0.5"
-nalgebra = "0.14"
-rand = "0.3"
+alga = "0.7"
+nalgebra = "0.16"
+rand = "0.5"
 time = "0.1"
 rayon = "1.0"
-lazy_static = "0.2.8"
-bbox = "0.8"
+lazy_static = "1.1"
+bbox = "0.9"
 num-traits = "0.2"
 
 [dev-dependencies]
-approx = "0.1"
+approx = "0.3"
 bencher = "0.1"
-implicit3d = "0.9"
+implicit3d = "0.11"
 
 [[bench]]
 name = "tessellation"

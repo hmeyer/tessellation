@@ -7,3 +7,13 @@ pub struct Plane<S: 'static + Real + Debug> {
     pub p: na::Point3<S>,
     pub n: na::Vector3<S>,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn empty() {
+        assert!(true);
+    }
+}

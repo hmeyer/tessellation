@@ -26,8 +26,7 @@ impl<S: 'static + Real + Debug> Mesh<S> {
                     self.vertices[i][2].into(),
                 );
                 na::Point3::<f32>::new(v.0 as f32, v.1 as f32, v.2 as f32)
-            })
-            .collect();
+            }).collect();
         let r = (v[1] - v[0]).cross(&(v[2] - v[0])).normalize();
         [r[0], r[1], r[2]]
     }
@@ -42,5 +41,15 @@ impl<S: 'static + Real + Debug> Mesh<S> {
             self.vertices[i][2].into(),
         );
         [v.0 as f32, v.1 as f32, v.2 as f32]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn empty() {
+        assert!(true);
     }
 }
