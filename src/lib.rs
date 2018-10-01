@@ -100,13 +100,3 @@ impl AsUSize for f64 {
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn empty() {
-        assert!(true);
-    }
-}

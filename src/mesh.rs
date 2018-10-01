@@ -49,7 +49,14 @@ mod test {
     use super::*;
 
     #[test]
-    fn empty() {
-        assert!(true);
+    fn simple() {
+        let m = Mesh {
+            vertices: vec![[0., 0., 0.], [1., 0., 0.], [0., 1., 0.]],
+            faces: vec![[0, 1, 2]],
+        };
+        assert_eq!(m.normal32(0), [0., 0., 1.]);
+        assert_eq!(m.vertex32(0), [0., 0., 0.]);
+        assert_eq!(m.vertex32(1), [1., 0., 0.]);
+        assert_eq!(m.vertex32(2), [0., 1., 0.]);
     }
 }

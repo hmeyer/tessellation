@@ -13,6 +13,9 @@ impl BitSet {
     pub fn from_4bits(b0: usize, b1: usize, b2: usize, b3: usize) -> BitSet {
         BitSet(1 << b0 | 1 << b1 | 1 << b2 | 1 << b3)
     }
+    pub fn from_u32(data: u32) -> BitSet {
+        BitSet(data)
+    }
     pub fn set(&mut self, index: usize) {
         self.0 |= 1 << index;
     }
@@ -22,11 +25,31 @@ impl BitSet {
     pub fn intersect(&self, other: BitSet) -> BitSet {
         return BitSet(self.0 & other.0);
     }
+    pub fn invert(&self) -> BitSet {
+        return BitSet(!self.0);
+    }
     pub fn get(&self, index: usize) -> bool {
         (self.0 & (1 << index)) != 0
     }
     pub fn empty(&self) -> bool {
         self.0 == 0
+    }
+    pub fn count(&self) -> usize {
+        let mut result = 0;
+        for p in 0..32 {
+            if (self.0 & (1 << p)) != 0 {
+                result += 1;
+            }
+        }
+        return result;
+    }
+    pub fn lowest(&self) -> Option<usize> {
+        for p in 0..32 {
+            if (self.0 & (1 << p)) != 0 {
+                return Some(p);
+            }
+        }
+        None
     }
     pub fn as_u32(&self) -> u32 {
         self.0
@@ -146,6 +169,55 @@ mod tests {
         assert_eq!(
             super::BitSet(0b11).intersect(super::BitSet(0b11)),
             super::BitSet(0b11)
+        );
+    }
+
+    #[test]
+    fn invert() {
+        assert_eq!(
+            super::BitSet(0b00000000000000000000000000000000).invert(),
+            super::BitSet(0b11111111111111111111111111111111)
+        );
+        assert_eq!(
+            super::BitSet(0b11111111111111111111111111111111).invert(),
+            super::BitSet(0b00000000000000000000000000000000)
+        );
+        assert_eq!(
+            super::BitSet(0b11111111111111110000000000000000).invert(),
+            super::BitSet(0b00000000000000001111111111111111)
+        );
+    }
+
+    #[test]
+    fn count() {
+        assert_eq!(super::BitSet(0b00000000000000000000000000000000).count(), 0);
+        assert_eq!(
+            super::BitSet(0b11111111111111111111111111111111).count(),
+            32
+        );
+        assert_eq!(
+            super::BitSet(0b11111111111111110000000000000000).count(),
+            16
+        );
+        assert_eq!(
+            super::BitSet(0b00000000000000001111111111111111).count(),
+            16
+        );
+    }
+
+    #[test]
+    fn lowest() {
+        assert_eq!(
+            super::BitSet(0b00000000000000000000000000000000).lowest(),
+            None
+        );
+        assert_eq!(
+            super::BitSet(0b11111111111111111111111111111111).lowest(),
+            Some(0)
+        );
+        assert_eq!(
+            super::BitSet(0b11111111111111110000000000000000).lowest(),
+            Some(16)
         );
     }
 
