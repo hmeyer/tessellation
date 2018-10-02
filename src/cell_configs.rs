@@ -417,10 +417,7 @@ mod test {
         for cell_corners in 0..256 {
             let defined = CELL_CONFIGS[cell_corners];
             let expected = get_edges_for_cell_config(cell_corners as u8);
-            assert_eq!(defined.len(), expected.len());
-            for i in 0..defined.len() {
-                assert_eq!(defined[i], expected[i]);
-            }
+            assert_eq!(expected, defined);
         }
     }
 }
