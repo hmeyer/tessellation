@@ -63,12 +63,11 @@ impl VertexIndex {
         }
         let mut off = [0, 0, 0];
         off[face / 2] = 1;
-        let neighbor_index;
-        if (face & 1) == 1 {
-            neighbor_index = offset(self.index, off);
+        let neighbor_index = if (face & 1) == 1 {
+            offset(self.index, off)
         } else {
-            neighbor_index = neg_offset(self.index, off);
-        }
+            neg_offset(self.index, off)
+        };
         Some(VertexIndex {
             edges: neighbor_edge_set,
             index: neighbor_index,

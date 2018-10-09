@@ -6,7 +6,6 @@ use plane::Plane;
 use std::convert;
 use std::fmt::Debug;
 
-
 pub const EPSILON: f32 = 1e-10;
 
 // Quadratic error function
@@ -27,7 +26,6 @@ pub struct Qef<S: 'static + Real + Debug> {
     bbox: BoundingBox<S>,
 }
 
-
 impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
     pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
         let mut qef = Qef {
@@ -46,7 +44,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
             ),
             btb: convert::From::from(0.),
             error: S::nan(),
-            bbox: bbox,
+            bbox,
         };
         for p in planes {
             qef.ata[0] += p.n[0] * p.n[0];
@@ -123,7 +121,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
         // TODO: Verify this is the right thing to do. Error is essentially an Elipsoid, so we
         // might need to do something more clever here.
         for dim in 0..3 {
-            let mut d_mid = na_mid.clone();
+            let mut d_mid = na_mid;
             d_mid[dim] += convert::From::from(EPSILON);
             let d_error = self.error(&d_mid, ma);
             if d_error < mid_error {
@@ -150,11 +148,10 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::{BoundingBox, Qef};
     use super::Plane;
+    use super::{BoundingBox, Qef};
     use na;
 
     #[test]
@@ -163,15 +160,15 @@ mod tests {
         let mut qef = Qef::new(
             &[
                 Plane {
-                    p: origin.clone(),
+                    p: origin,
                     n: na::Vector3::new(0., 1., 2.).normalize(),
                 },
                 Plane {
-                    p: origin.clone(),
+                    p: origin,
                     n: na::Vector3::new(1., 2., 3.).normalize(),
                 },
                 Plane {
-                    p: origin.clone(),
+                    p: origin,
                     n: na::Vector3::new(2., 3., 4.).normalize(),
                 },
             ],

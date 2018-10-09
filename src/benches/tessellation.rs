@@ -7,11 +7,12 @@ extern crate num_traits;
 extern crate tessellation;
 use alga::general::Real;
 use bencher::Bencher;
-use implicit3d::{Intersection, Object, SlabX, SlabY, SlabZ, Sphere};
+use implicit3d::{
+    Intersection, Object, PlaneNegX, PlaneNegY, PlaneNegZ, PlaneX, PlaneY, PlaneZ, Sphere,
+};
 use nalgebra as na;
 use num_traits::Float;
 use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouring};
-
 
 struct ObjectAdaptor<S: Real> {
     implicit: Box<implicit3d::Object<S>>,
@@ -19,7 +20,8 @@ struct ObjectAdaptor<S: Real> {
 }
 
 impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
-    for ObjectAdaptor<S> {
+    for ObjectAdaptor<S>
+{
     fn bbox(&self) -> &BoundingBox<S> {
         self.implicit.bbox()
     }
@@ -32,17 +34,26 @@ impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> Implicit
 }
 
 fn create_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
-    let _0: S = From::from(0f32);
-    let _1: S = From::from(1f32);
-    Intersection::from_vec(vec![SlabX::new(_1), SlabY::new(_1), SlabZ::new(_1)], _0).unwrap()
-        as Box<Object<S>>
+    let zero: S = From::from(0f32);
+    let one: S = From::from(1f32);
+    Intersection::from_vec(
+        vec![
+            PlaneX::new(one),
+            PlaneY::new(one),
+            PlaneZ::new(one),
+            PlaneNegX::new(one),
+            PlaneNegY::new(one),
+            PlaneNegZ::new(one),
+        ],
+        zero,
+    ).unwrap() as Box<Object<S>>
 }
 
 fn create_hollow_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
-    let _02: S = From::from(0.2f32);
-    let _05: S = From::from(0.5f32);
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(_05)], _02).unwrap()
-        as Box<Object<S>>
+    let point_two: S = From::from(0.2f32);
+    let point_five: S = From::from(0.5f32);
+    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(point_five)], point_two)
+        .unwrap() as Box<Object<S>>
 }
 
 fn create_object<S: Real + AsUSize + Float + From<f32>>() -> ObjectAdaptor<S> {
@@ -65,8 +76,6 @@ fn tessellate<S: From<f32> + AsUSize + Real + Float>(b: &mut Bencher) {
         my_tess.tessellate();
     });
 }
-
-
 
 benchmark_group!(bench_tessellation_f32, tessellate<f32>,);
 benchmark_group!(bench_tessellation_f64, tessellate<f64>,);

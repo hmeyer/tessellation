@@ -10,10 +10,10 @@ use plane::Plane;
 use qef;
 use rand;
 use rayon::prelude::*;
-use std::{error, fmt};
 use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
+use std::{error, fmt};
 use vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};
 
 // How accurately find zero crossings.
@@ -98,14 +98,16 @@ const QUADS: [[Edge; 4]; 3] = [
 ];
 
 lazy_static! {
-    static ref OUTSIDE_EDGES_PER_CORNER: [BitSet; 8] = [BitSet::from_3bits(0, 1, 2),
-                                                        BitSet::from_3bits(0, 4, 5),
-                                                        BitSet::from_3bits(1, 3, 8),
-                                                        BitSet::from_3bits(3, 4, 11),
-                                                        BitSet::from_3bits(2, 6, 7),
-                                                        BitSet::from_3bits(5, 6, 10),
-                                                        BitSet::from_3bits(7, 8, 9),
-                                                        BitSet::from_3bits(9, 10, 11)];
+    static ref OUTSIDE_EDGES_PER_CORNER: [BitSet; 8] = [
+        BitSet::from_3bits(0, 1, 2),
+        BitSet::from_3bits(0, 4, 5),
+        BitSet::from_3bits(1, 3, 8),
+        BitSet::from_3bits(3, 4, 11),
+        BitSet::from_3bits(2, 6, 7),
+        BitSet::from_3bits(5, 6, 10),
+        BitSet::from_3bits(7, 8, 9),
+        BitSet::from_3bits(9, 10, 11)
+    ];
 }
 
 #[derive(Debug)]
@@ -230,7 +232,6 @@ fn pow2roundup(x: usize) -> usize {
     return x + 1;
 }
 
-
 // Returns a BitSet containing all egdes connected to "edge" in this cell.
 fn get_connected_edges(edge: Edge, cell: BitSet) -> BitSet {
     for &edge_set in CELL_CONFIGS[cell.as_u32() as usize].iter() {
@@ -253,7 +254,8 @@ fn get_connected_edges_from_edge_set(edge_set: BitSet, cell: BitSet) -> Vec<BitS
         result
             .iter()
             .fold(BitSet::zero(), |sum, x| sum.merge(*x))
-            .intersect(edge_set) == edge_set,
+            .intersect(edge_set)
+            == edge_set,
         "result: {:?} does not contain all edges from egde_set: {:?}",
         result,
         edge_set
@@ -623,8 +625,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                     }
                 }
                 return true;
-            })
-            .map(|(k, _)| k.clone())
+            }).map(|(k, _)| k.clone())
             .collect();
         for k in keys_to_remove {
             value_grid.remove(&k);
@@ -699,7 +700,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         let mut num_solved = 1;
         // If error exceed threshold, recurse into subvertices.
         if Float::abs(error) > self.error {
-            for &child_index in vertex.children.iter() {
+            for &child_index in &vertex.children {
                 num_solved += self.recursively_solve_qefs(layer - 1, child_index);
             }
         }
@@ -714,14 +715,12 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         for edge_index in self.edge_grid.borrow().keys() {
             self.add_vertices_for_minimal_egde(edge_index, &mut vertices, &mut index_map);
         }
-        for vertex in vertices.iter_mut() {
-            for neighbor_vec in vertex.neighbors.iter_mut() {
+        for vertex in &mut vertices {
+            for neighbor_vec in &mut vertex.neighbors {
                 for neighbor in neighbor_vec.iter_mut() {
-                    match neighbor {
-                        &mut VarIndex::VertexIndex(vi) => {
-                            *neighbor = VarIndex::Index(*index_map.get(&vi).unwrap())
-                        }
-                        &mut VarIndex::Index(_) => panic!("unexpected Index in fresh leaf map."),
+                    match *neighbor {
+                        VarIndex::VertexIndex(vi) => *neighbor = VarIndex::Index(index_map[&vi]),
+                        VarIndex::Index(_) => panic!("unexpected Index in fresh leaf map."),
                     }
                 }
             }
@@ -761,7 +760,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
     ) {
         debug_assert!((edge_index.edge as usize) < 4);
         let cell_size = na::Vector3::new(self.res, self.res, self.res);
-        for &quad_egde in QUADS[edge_index.edge as usize].iter() {
+        for &quad_egde in &QUADS[edge_index.edge as usize] {
             let idx = neg_offset(edge_index.index, EDGE_OFFSET[quad_egde as usize]);
 
             let edge_set = get_connected_edges(quad_egde, self.bitset_for_cell(idx));
@@ -778,7 +777,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                     Vec::new(),
                     Vec::new(),
                 ];
-                for i in 0..6 {
+                for (i, neighbor) in neighbors.iter_mut().enumerate().take(6) {
                     if let Some(mut neighbor_index) = vertex_index.neighbor(i) {
                         for edges in get_connected_edges_from_edge_set(
                             neighbor_index.edges,
@@ -786,8 +785,8 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                         ) {
                             neighbor_index.edges = edges;
                             let idx = VarIndex::VertexIndex(neighbor_index);
-                            if !neighbors[i].contains(&idx) {
-                                neighbors[i].push(idx);
+                            if !neighbor.contains(&idx) {
+                                neighbor.push(idx);
                             }
                         }
                     }
@@ -803,8 +802,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                             edge: Edge::from_usize(edge),
                             index: idx,
                         })
-                    })
-                    .collect();
+                    }).collect();
                 let cell_origin = self.origin
                     + na::Vector3::new(
                         From::from(idx[0] as f32),
@@ -817,7 +815,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                         &tangent_planes,
                         BoundingBox::new(&cell_origin, &(cell_origin + cell_size)),
                     )),
-                    neighbors: neighbors,
+                    neighbors,
                     parent: Cell::new(None),
                     children: Vec::new(),
                     mesh_index: Cell::new(None),
@@ -831,7 +829,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
 
     fn get_edge_tangent_plane(&self, edge_index: &EdgeIndex) -> Plane<S> {
         if let Some(ref plane) = self.edge_grid.borrow().get(&edge_index.base()) {
-            return *plane.clone();
+            return **plane;
         }
         panic!(
             "could not find edge_point: {:?} -> {:?}",
@@ -850,7 +848,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         };
 
         // Convert the vertex index to index and layer in the Octtree.
-        let mut octtree_index = *self.vertex_index_map.get(&vertex_index).unwrap();
+        let mut octtree_index = self.vertex_index_map[&vertex_index];
         let mut octtree_layer = 0;
         // Walk up the chain of parents
         loop {
@@ -858,7 +856,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                 .parent
                 .get()
                 .unwrap();
-            let ref next_vertex = self.vertex_octtree[octtree_layer + 1][next_index];
+            let next_vertex = &self.vertex_octtree[octtree_layer + 1][next_index];
             let error = next_vertex.qef.borrow().error;
             if (!error.is_nan() && error > (self.error))
                 || (octtree_layer == self.vertex_octtree.len() - 2)
@@ -882,7 +880,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
             vertex.qef.borrow_mut().solve()
         }
         let qef_solution = vertex.qef.borrow().solution;
-        let ref mut vertex_list = self.mesh.borrow_mut().vertices;
+        let vertex_list = &mut self.mesh.borrow_mut().vertices;
         let result = vertex_list.len();
         vertex.mesh_index.set(Some(result));
         vertex_list.push([qef_solution.x, qef_solution.y, qef_solution.z]);
@@ -919,7 +917,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         debug_assert!(edge_index.index.iter().all(|&i| i > 0));
 
         let mut p = Vec::with_capacity(4);
-        for &quad_egde in QUADS[edge_index.edge as usize].iter() {
+        for &quad_egde in &QUADS[edge_index.edge as usize] {
             let point_index = self.lookup_cell_point(
                 quad_egde,
                 neg_offset(edge_index.index, EDGE_OFFSET[quad_egde as usize]),
@@ -940,7 +938,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                 p.reverse();
             }
         }
-        let ref mut face_list = self.mesh.borrow_mut().faces;
+        let face_list = &mut self.mesh.borrow_mut().faces;
         // TODO: Fix this to choose the proper split.
         face_list.push([p[0], p[1], p[2]]);
         if p.len() == 4 {
@@ -964,10 +962,11 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         distance = Float::min(Float::min(distance, Float::abs(av)), Float::abs(bv));
         let precision: S = From::from(PRECISION);
         if distance < precision * self.res {
-            let mut result = &a;
-            if Float::abs(bv) < Float::abs(av) {
-                result = &b;
-            }
+            let result = if Float::abs(bv) < Float::abs(av) {
+                &b
+            } else {
+                &a
+            };
             return Some(Plane {
                 p: *result,
                 // We need a precise normal here.
@@ -986,11 +985,10 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::get_connected_edges_from_edge_set;
     use super::super::bitset::BitSet;
+    use super::get_connected_edges_from_edge_set;
     //  Corner indexes
     //
     //      6---------------7
