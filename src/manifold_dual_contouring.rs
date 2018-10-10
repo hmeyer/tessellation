@@ -69,8 +69,8 @@ impl Edge {
             _ => panic!("Not edge for {:?}", e),
         }
     }
-    pub fn base(&self) -> Edge {
-        Edge::from_usize(*self as usize % 3)
+    pub fn base(self) -> Edge {
+        Edge::from_usize(self as usize % 3)
     }
 }
 
@@ -117,16 +117,16 @@ pub enum DualContouringError {
 
 impl error::Error for DualContouringError {
     fn description(&self) -> &str {
-        match self {
-            &DualContouringError::HitZero(_) => "Hit zero value during grid sampling.",
+        match *self {
+            DualContouringError::HitZero(_) => "Hit zero value during grid sampling.",
         }
     }
 }
 
 impl fmt::Display for DualContouringError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &DualContouringError::HitZero(ref s) => write!(f, "Hit zero value for {}", s),
+        match *self {
+            DualContouringError::HitZero(ref s) => write!(f, "Hit zero value for {}", s),
         }
     }
 }
@@ -175,7 +175,7 @@ impl<S: Real> Vertex<S> {
         }
         for edges_on_face in EDGES_ON_FACE.iter() {
             let mut sum = 0;
-            for edge in edges_on_face.into_iter() {
+            for edge in *edges_on_face {
                 sum += self.edge_intersections[edge];
             }
             if sum != 0 && sum != 2 {
@@ -229,7 +229,7 @@ fn pow2roundup(x: usize) -> usize {
     x |= x >> 8;
     x |= x >> 16;
     x |= x >> 32;
-    return x + 1;
+    x + 1
 }
 
 // Returns a BitSet containing all egdes connected to "edge" in this cell.
@@ -270,23 +270,21 @@ fn half_index(input: &Index) -> Index {
 // Will add the following vertices to neighbors:
 // All vertices in the same octtree subcell as start and connected to start.
 fn add_connected_vertices_in_subcell<S: Real>(
-    base: &Vec<Vertex<S>>,
+    base: &[Vertex<S>],
     start: &Vertex<S>,
     neigbors: &mut BTreeSet<usize>,
 ) {
     let parent_index = half_index(&start.index);
-    for neighbor_index_vector in start.neighbors.iter() {
+    for neighbor_index_vector in &start.neighbors {
         for neighbor_index in neighbor_index_vector.iter() {
-            match neighbor_index {
-                &VarIndex::Index(vi) => {
-                    let ref neighbor = base[vi];
-                    if half_index(&neighbor.index) == parent_index {
-                        if neigbors.insert(vi) {
-                            add_connected_vertices_in_subcell(base, &base[vi], neigbors);
-                        }
+            match *neighbor_index {
+                VarIndex::Index(vi) => {
+                    let neighbor = &base[vi];
+                    if half_index(&neighbor.index) == parent_index && neigbors.insert(vi) {
+                        add_connected_vertices_in_subcell(base, &base[vi], neigbors);
                     }
                 }
-                &VarIndex::VertexIndex(vi) => {
+                VarIndex::VertexIndex(vi) => {
                     panic!("unexpected VertexIndex {:?}", vi);
                 }
             }
@@ -298,7 +296,7 @@ fn add_child_to_parent<S: Real + Float + From<f32>>(child: &Vertex<S>, parent: &
     parent.qef.borrow_mut().merge(&*child.qef.borrow());
     for dim in 0..3 {
         let relevant_neighbor = dim * 2 + (child.index[dim] & 1);
-        for neighbor in child.neighbors[relevant_neighbor].iter() {
+        for neighbor in &child.neighbors[relevant_neighbor] {
             if !parent.neighbors[relevant_neighbor].contains(neighbor) {
                 parent.neighbors[relevant_neighbor].push(*neighbor);
             }
@@ -308,7 +306,7 @@ fn add_child_to_parent<S: Real + Float + From<f32>>(child: &Vertex<S>, parent: &
 
 fn subsample_euler_characteristics<S: Real>(
     children: &BTreeSet<usize>,
-    vertices: &Vec<Vertex<S>>,
+    vertices: &[Vertex<S>],
 ) -> ([u32; 12], i32) {
     let mut intersections = [0u32; 12];
     let mut euler = 0i32;
@@ -317,11 +315,11 @@ fn subsample_euler_characteristics<S: Real>(
         let i = vertex.index;
         let corner_index = (i[2] & 1) << 2 | (i[1] & 1) << 1 | (i[0] & 1);
         let outside_edges = OUTSIDE_EDGES_PER_CORNER[corner_index];
-        for i in 0..12 {
+        for (i, vertex_edge_intersection) in vertex.edge_intersections.iter().enumerate().take(12) {
             if outside_edges.get(i) {
-                intersections[i] += vertex.edge_intersections[i];
+                intersections[i] += vertex_edge_intersection;
             } else {
-                inner_sum += vertex.edge_intersections[i];
+                inner_sum += vertex_edge_intersection;
             }
         }
         euler += vertex.euler_characteristic;
@@ -336,7 +334,7 @@ fn subsample_euler_characteristics<S: Real>(
     (intersections, euler)
 }
 
-fn subsample_octtree<S: Real + Float + From<f32>>(base: &Vec<Vertex<S>>) -> Vec<Vertex<S>> {
+fn subsample_octtree<S: Real + Float + From<f32>>(base: &[Vertex<S>]) -> Vec<Vertex<S>> {
     let mut result = Vec::new();
     for (i, vertex) in base.iter().enumerate() {
         if vertex.parent.get() == None {
@@ -361,7 +359,7 @@ fn subsample_octtree<S: Real + Float + From<f32>>(base: &Vec<Vertex<S>>) -> Vec<
                 edge_intersections: intersections,
                 euler_characteristic: euler,
             };
-            for &neighbor_index in neighbor_set.iter() {
+            for &neighbor_index in &neighbor_set {
                 let child = &base[neighbor_index];
                 debug_assert!(
                     child.parent.get() == None,
@@ -377,14 +375,12 @@ fn subsample_octtree<S: Real + Float + From<f32>>(base: &Vec<Vertex<S>>) -> Vec<
             result.push(parent);
         }
     }
-    for vertex in result.iter_mut() {
-        for neighbor_vec in vertex.neighbors.iter_mut() {
+    for vertex in &mut result {
+        for neighbor_vec in &mut vertex.neighbors {
             for neighbor in neighbor_vec.iter_mut() {
-                match neighbor {
-                    &mut VarIndex::VertexIndex(_) => {
-                        panic!("unexpected VertexIndex in normal node.")
-                    }
-                    &mut VarIndex::Index(i) => {
+                match *neighbor {
+                    VarIndex::VertexIndex(_) => panic!("unexpected VertexIndex in normal node."),
+                    VarIndex::Index(i) => {
                         *neighbor = VarIndex::Index(base[i].parent.get().unwrap())
                     }
                 }
@@ -420,9 +416,9 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         res: S,
         relative_error: S,
     ) -> ManifoldDualContouring<'a, S> {
-        let _1: S = From::from(1f32);
+        let one: S = From::from(1f32);
         let mut bbox = f.bbox().clone();
-        bbox.dilate(_1 + res * From::from(1.1f32));
+        bbox.dilate(one + res * From::from(1.1f32));
         ManifoldDualContouring {
             function: f,
             origin: bbox.min,
@@ -435,7 +431,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                 vertices: Vec::new(),
                 faces: Vec::new(),
             }),
-            res: res,
+            res,
             error: res * relative_error,
             value_grid: HashMap::new(),
             edge_grid: RefCell::new(HashMap::new()),
@@ -478,7 +474,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         let origin = self.origin;
         let origin_value = self.function.value(&origin);
 
-        return self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value);
+        self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value)
     }
 
     // This method does the main work of tessellation.
@@ -624,8 +620,8 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                         }
                     }
                 }
-                return true;
-            }).map(|(k, _)| k.clone())
+                true
+            }).map(|(k, _)| *k)
             .collect();
         for k in keys_to_remove {
             value_grid.remove(&k);
@@ -637,8 +633,8 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
     fn generate_edge_grid(&mut self) {
         let mut edge_grid = self.edge_grid.borrow_mut();
         for (&point_idx, &point_value) in &self.value_grid {
-            for &edge in [Edge::A, Edge::B, Edge::C].iter() {
-                let mut adjacent_idx = point_idx.clone();
+            for &edge in &[Edge::A, Edge::B, Edge::C] {
+                let mut adjacent_idx = point_idx;
                 adjacent_idx[edge as usize] += 1;
                 if let Some(&adjacent_value) = self.value_grid.get(&adjacent_idx) {
                     let point_pos = self.origin
@@ -654,7 +650,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                     {
                         edge_grid.insert(
                             EdgeIndex {
-                                edge: edge,
+                                edge,
                                 index: point_idx,
                             },
                             plane,
@@ -680,7 +676,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
 
     fn recursively_solve_qefs(&self, layer: usize, index_in_layer: usize) -> usize {
         let vertex = &self.vertex_octtree[layer][index_in_layer];
-        assert!(vertex.children.len() == 0 || layer > 0);
+        assert!(vertex.children.is_empty() || layer > 0);
         let error;
         {
             // Solve qef and store error.
@@ -884,7 +880,7 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         let result = vertex_list.len();
         vertex.mesh_index.set(Some(result));
         vertex_list.push([qef_solution.x, qef_solution.y, qef_solution.z]);
-        return result;
+        result
     }
 
     fn bitset_for_cell(&self, idx: Index) -> BitSet {
@@ -978,9 +974,9 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
         let nv = self.function.value(&n);
 
         if Float::signum(av) != Float::signum(nv) {
-            return self.find_zero(a, av, n, nv);
+            self.find_zero(a, av, n, nv)
         } else {
-            return self.find_zero(n, nv, b, bv);
+            self.find_zero(n, nv, b, bv)
         }
     }
 }

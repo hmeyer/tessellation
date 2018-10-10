@@ -31,8 +31,8 @@ fn egdes_on_neighbor(neighbor_index: usize, edges: BitSet) -> BitSet {
     match neighbor_index {
         0 => BitSet(bits << 3),
         1 => BitSet(bits >> 3),
-        2 => BitSet((bits & 0b1000001) << 3 | (bits & 0b100100) << 6),
-        3 => BitSet((bits & 0b1000001000) >> 3 | (bits & 0b100100000000) >> 6),
+        2 => BitSet((bits & 0b100_0001) << 3 | (bits & 0b10_0100) << 6),
+        3 => BitSet((bits & 0b10_0000_1000) >> 3 | (bits & 0b1001_0000_0000) >> 6),
         4 => BitSet(bits << 6),
         5 => BitSet(bits >> 6),
         x => panic!("Invalid neighbor index: {}", x),

@@ -8,7 +8,7 @@ use bitset::BitSet;
 // For each corner config, return all edges, that are connected to a single point. These egdes are
 // stored in a BitSet. Since there might be more than 1 point, store  a slice of BitSets.
 
-pub const CELL_CONFIGS: &'static [&'static [BitSet]] = &[
+pub const CELL_CONFIGS: &[&[BitSet]] = &[
     &[],
     &[BitSet(7)],
     &[BitSet(49)],
@@ -330,14 +330,14 @@ mod test {
     // Return a list of a set of edges for a cell config. E.g. which edges are connected to
     // each other for that cell config.
     fn get_edges_for_cell_config(corners: u8) -> Vec<BitSet> {
-        let cell = BitSet::from_u32(corners as u32);
+        let cell = BitSet::from_u32(u32::from(corners));
         // Handle special case
         if let Some(special) = get_connected_edges_for_diagonal_case(cell) {
             return special;
         }
         let mut result = Vec::new();
         let mut visited_corners = BitSet::zero();
-        for corner in cell.clone().into_iter() {
+        for corner in cell {
             let connected_corners = visit_all_corners(corner, cell, &mut visited_corners);
             if !connected_corners.empty() {
                 result.push(connected_corners);
@@ -363,7 +363,7 @@ mod test {
         // Mark the current corner as visited.
         visited_corners.set(corner);
         let mut result = BitSet::zero();
-        for adjacent_corner_ref in CORNER_CONNS[corner].into_iter() {
+        for adjacent_corner_ref in &CORNER_CONNS[corner] {
             let adjacent_corner = *adjacent_corner_ref as usize;
             if cell.get(adjacent_corner) {
                 result = result.merge(visit_all_corners(adjacent_corner, cell, visited_corners));
@@ -377,7 +377,7 @@ mod test {
 
     fn bitset_from_edges(edges: [Edge; 3]) -> BitSet {
         let mut bs = BitSet::zero();
-        for edge in edges.iter() {
+        for edge in &edges {
             bs.set(*edge as usize);
         }
         bs
@@ -414,10 +414,9 @@ mod test {
 
     #[test]
     fn build_and_test() {
-        for cell_corners in 0..256 {
-            let defined = CELL_CONFIGS[cell_corners];
+        for (cell_corners, defined) in CELL_CONFIGS.iter().enumerate().take(256) {
             let expected = get_edges_for_cell_config(cell_corners as u8);
-            assert_eq!(expected, defined);
+            assert_eq!(expected, *defined);
         }
     }
 }
