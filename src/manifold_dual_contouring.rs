@@ -792,7 +792,6 @@ impl<'a, S: From<f32> + Real + Float + AsUSize> ManifoldDualContouring<'a, S> {
                     intersections[edge] = 1;
                 }
                 let tangent_planes: Vec<_> = edge_set
-                    .into_iter()
                     .map(|edge| {
                         self.get_edge_tangent_plane(&EdgeIndex {
                             edge: Edge::from_usize(edge),
