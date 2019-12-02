@@ -1,4 +1,4 @@
-use alga::general::Real;
+use alga::general::RealField;
 use na;
 use std::fmt::Debug;
 
@@ -11,7 +11,7 @@ pub struct Mesh<S> {
     pub faces: Vec<[usize; 3]>,
 }
 
-impl<S: 'static + Real + Debug> Mesh<S> {
+impl<S: 'static + RealField + Debug> Mesh<S> {
     /// Return the normal of the face at index face as triple of f32.
     pub fn normal32(&self, face: usize) -> [f32; 3]
     where

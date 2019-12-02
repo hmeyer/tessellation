@@ -49,7 +49,7 @@ extern crate rand;
 extern crate rayon;
 extern crate time;
 
-use alga::general::Real;
+use alga::general::RealField;
 pub use bbox::BoundingBox;
 use std::fmt::Debug;
 
@@ -65,7 +65,7 @@ pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
 
 /// Trait to be implemented by functions that should be tessellated.
-pub trait ImplicitFunction<S: Debug + Real> {
+pub trait ImplicitFunction<S: Debug + RealField> {
     /// Return a Bounding Box, which is essential, so the algorithm knows where to search for
     /// surfaces.
     fn bbox(&self) -> &BoundingBox<S>;

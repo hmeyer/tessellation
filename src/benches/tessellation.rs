@@ -1,11 +1,11 @@
-extern crate alga;
+ extern crate alga;
 #[macro_use]
 extern crate bencher;
 extern crate implicit3d;
 extern crate nalgebra;
 extern crate num_traits;
 extern crate tessellation;
-use alga::general::Real;
+use alga::general::RealField;
 use bencher::Bencher;
 use implicit3d::{
     Intersection, Object, PlaneNegX, PlaneNegY, PlaneNegZ, PlaneX, PlaneY, PlaneZ, Sphere,
@@ -14,12 +14,12 @@ use nalgebra as na;
 use num_traits::Float;
 use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouring};
 
-struct ObjectAdaptor<S: Real> {
-    implicit: Box<implicit3d::Object<S>>,
+struct ObjectAdaptor<S: RealField> {
+    implicit: Box<dyn implicit3d::Object<S>>,
     resolution: S,
 }
 
-impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> ImplicitFunction<S>
+impl<S: ::std::fmt::Debug + na::RealField + ::num_traits::Float + From<f32>> ImplicitFunction<S>
     for ObjectAdaptor<S>
 {
     fn bbox(&self) -> &BoundingBox<S> {
@@ -33,30 +33,30 @@ impl<S: ::std::fmt::Debug + na::Real + ::num_traits::Float + From<f32>> Implicit
     }
 }
 
-fn create_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
+fn create_cube<S: From<f32> + Float + RealField>() -> Box<dyn Object<S>> {
     let zero: S = From::from(0f32);
     let one: S = From::from(1f32);
     Intersection::from_vec(
         vec![
-            PlaneX::new(one),
-            PlaneY::new(one),
-            PlaneZ::new(one),
-            PlaneNegX::new(one),
-            PlaneNegY::new(one),
-            PlaneNegZ::new(one),
+            Box::new(PlaneX::new(one)),
+            Box::new(PlaneY::new(one)),
+            Box::new(PlaneZ::new(one)),
+            Box::new(PlaneNegX::new(one)),
+            Box::new(PlaneNegY::new(one)),
+            Box::new(PlaneNegZ::new(one)),
         ],
         zero,
-    ).unwrap() as Box<Object<S>>
+    ).unwrap() as Box<dyn Object<S>>
 }
 
-fn create_hollow_cube<S: From<f32> + Float + Real>() -> Box<Object<S>> {
+fn create_hollow_cube<S: From<f32> + Float + RealField>() -> Box<dyn Object<S>> {
     let point_two: S = From::from(0.2f32);
     let point_five: S = From::from(0.5f32);
-    Intersection::difference_from_vec(vec![create_cube(), Sphere::new(point_five)], point_two)
-        .unwrap() as Box<Object<S>>
+    Intersection::difference_from_vec(vec![create_cube(), Box::new(Sphere::new(point_five))], point_two)
+        .unwrap() as Box<dyn Object<S>>
 }
 
-fn create_object<S: Real + AsUSize + Float + From<f32>>() -> ObjectAdaptor<S> {
+fn create_object<S: RealField + AsUSize + Float + From<f32>>() -> ObjectAdaptor<S> {
     let mut object = create_hollow_cube::<S>();
     object.set_parameters(&implicit3d::PrimitiveParameters {
         fade_range: From::from(0.1),
@@ -68,7 +68,7 @@ fn create_object<S: Real + AsUSize + Float + From<f32>>() -> ObjectAdaptor<S> {
     }
 }
 
-fn tessellate<S: From<f32> + AsUSize + Real + Float>(b: &mut Bencher) {
+fn tessellate<S: From<f32> + AsUSize + RealField + Float>(b: &mut Bencher) {
     let o = create_object::<S>();
     let tess = ManifoldDualContouring::new(&o, From::from(0.02), From::from(0.1));
     b.iter(|| {

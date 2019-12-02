@@ -1,4 +1,4 @@
-use alga::general::Real;
+use alga::general::RealField;
 use bbox::BoundingBox;
 use na;
 use num_traits::Float;
@@ -11,7 +11,7 @@ pub const EPSILON: f32 = 1e-10;
 // Quadratic error function
 
 #[derive(Clone, Debug)]
-pub struct Qef<S: 'static + Real + Debug> {
+pub struct Qef<S: 'static + RealField + Debug> {
     // Point closest to all planes.
     pub solution: na::Vector3<S>,
     sum: na::Vector3<S>,
@@ -26,7 +26,7 @@ pub struct Qef<S: 'static + Real + Debug> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
+impl<S: 'static + RealField + Float + Debug + From<f32>> Qef<S> {
     pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
         let mut qef = Qef {
             solution: na::Vector3::new(S::nan(), S::nan(), S::nan()),
@@ -134,7 +134,7 @@ impl<S: 'static + Real + Float + Debug + From<f32>> Qef<S> {
     }
     fn error(&self, point: &na::Vector3<S>, ma: &na::Matrix3<S>) -> S {
         let _2_as_s: S = convert::From::from(2f32);
-        self.btb - _2_as_s * na::dot(point, &self.atb) + na::dot(point, &(*ma * *point))
+        self.btb - _2_as_s * na::Matrix::dot(point, &self.atb) + na::Matrix::dot(point, &(*ma * *point))
     }
     pub fn merge(&mut self, other: &Qef<S>) {
         for i in 0..6 {

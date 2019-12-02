@@ -1,9 +1,9 @@
-use alga::general::Real;
+use alga::general::RealField;
 use na;
 use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Plane<S: 'static + Real + Debug> {
+pub struct Plane<S: 'static + RealField + Debug> {
     pub p: na::Point3<S>,
     pub n: na::Vector3<S>,
 }
