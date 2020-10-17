@@ -1,4 +1,4 @@
-use bitset::BitSet;
+use crate::bitset::BitSet;
 
 //  Edge indexes
 //

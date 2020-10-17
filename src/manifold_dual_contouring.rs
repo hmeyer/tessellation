@@ -1,19 +1,19 @@
 use super::{AsUSize, ImplicitFunction, RealField};
 use bbox::BoundingBox;
-use bitset::BitSet;
-use cell_configs::CELL_CONFIGS;
-use mesh::Mesh;
-use na;
+use crate::bitset::BitSet;
+use crate::cell_configs::CELL_CONFIGS;
+use crate::mesh::Mesh;
+use crate::na;
 use num_traits::Float;
-use plane::Plane;
-use qef;
+use crate::plane::Plane;
+use crate::qef;
 use rand;
 use rayon::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::cmp;
 use std::collections::{BTreeSet, HashMap};
 use std::{error, fmt};
-use vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};
+use crate::vertex_index::{neg_offset, offset, Index, VarIndex, VertexIndex, EDGES_ON_FACE};
 
 // How accurately find zero crossings.
 const PRECISION: f32 = 0.05;
