@@ -2,7 +2,8 @@
 [![Build Status](https://travis-ci.org/hmeyer/tessellation.svg?branch=master)](https://travis-ci.org/hmeyer/tessellation)
 [![Codecov](https://codecov.io/github/hmeyer/tessellation/coverage.svg?branch=master)](https://codecov.io/github/hmeyer/tessellation)
 [![Cargo](https://img.shields.io/crates/v/tessellation.svg)](https://crates.io/crates/tessellation)
-[![License: GPL-3.0](https://img.shields.io/crates/l/direct-gui.svg)](#license)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/crates/d/tessellation.svg)](#downloads)
 
 Tessellation implements [Manifold Dual Contouring](http://faculty.cs.tamu.edu/schaefer/research/dualsimp_tvcg.pdf).
