@@ -2,6 +2,7 @@
 name = "tessellation"
 version = "0.8.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
+edition = "2018"
 
 description = "3d tessellation library."
 repository = "https://github.com/hmeyer/tessellation"
@@ -17,7 +18,6 @@ path = "src/lib.rs"
 alga = "0.9"
 nalgebra = "0.22"
 rand = "0.7"
-time = "0.1"
 rayon = "1.2"
 lazy_static = "1.4"
 bbox = "0.11"

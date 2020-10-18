@@ -1,4 +1,4 @@
-use bitset::BitSet;
+use crate::bitset::BitSet;
 
 //  Edge indexes
 //
@@ -15,7 +15,7 @@ use bitset::BitSet;
 //  o-------0-------+         +-- higher indexes in x ---->
 
 // Face order X0, X1, Y0, Y1, Z0, Z1
-lazy_static! {
+lazy_static::lazy_static! {
     pub static ref EDGES_ON_FACE: [BitSet; 6] = [
         BitSet::from_4bits(1, 2, 7, 8),
         BitSet::from_4bits(4, 5, 10, 11),
@@ -83,8 +83,8 @@ pub enum VarIndex {
 
 #[cfg(test)]
 mod tests {
-    use super::super::bitset::BitSet;
     use super::{VertexIndex, EDGES_ON_FACE};
+    use crate::bitset::BitSet;
 
     #[test]
     fn neighbor() {

@@ -1,4 +1,4 @@
-use bitset::BitSet;
+use crate::bitset::BitSet;
 
 // CELL_CONFIGS stores the different cell configurations as suggested by Nielson.
 // Each cell has 8 corners. Each corner can be either inside (true) or outside (false).
@@ -270,6 +270,7 @@ pub const CELL_CONFIGS: &[&[BitSet]] = &[
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::manifold_dual_contouring::Edge;
 
     // Following is the code used to generate this table.
 
@@ -324,8 +325,6 @@ mod test {
         (Corner::F, Corner::H),
         (Corner::D, Corner::H),
     ];
-
-    use manifold_dual_contouring::Edge;
 
     // Return a list of a set of edges for a cell config. E.g. which edges are connected to
     // each other for that cell config.

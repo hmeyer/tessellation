@@ -1,17 +1,14 @@
-use super::RealField;
+use crate::{plane::Plane, RealField};
 use bbox::BoundingBox;
-use na;
+use nalgebra as na;
 use num_traits::Float;
-use plane::Plane;
-use std::convert;
-use std::fmt::Debug;
+use std::{convert, fmt::Debug};
 
 pub const EPSILON: f32 = 1e-10;
 
-// Quadratic error function
-
+/// Quadratic error function
 #[derive(Clone, Debug)]
-pub struct Qef<S: 'static + RealField + Debug> {
+pub struct Qef<S: RealField + Debug> {
     // Point closest to all planes.
     pub solution: na::Vector3<S>,
     sum: na::Vector3<S>,
@@ -26,7 +23,7 @@ pub struct Qef<S: 'static + RealField + Debug> {
     bbox: BoundingBox<S>,
 }
 
-impl<S: 'static + RealField + Float + Debug + From<f32>> Qef<S> {
+impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
     pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
         let mut qef = Qef {
             solution: na::Vector3::new(S::nan(), S::nan(), S::nan()),
@@ -153,7 +150,7 @@ impl<S: 'static + RealField + Float + Debug + From<f32>> Qef<S> {
 mod tests {
     use super::Plane;
     use super::{BoundingBox, Qef};
-    use na;
+    use nalgebra as na;
 
     #[test]
     fn origin() {
