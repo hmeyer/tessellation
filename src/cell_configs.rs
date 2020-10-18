@@ -270,6 +270,7 @@ pub const CELL_CONFIGS: &[&[BitSet]] = &[
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::manifold_dual_contouring::Edge;
 
     // Following is the code used to generate this table.
 
@@ -324,8 +325,6 @@ mod test {
         (Corner::F, Corner::H),
         (Corner::D, Corner::H),
     ];
-
-    use crate::manifold_dual_contouring::Edge;
 
     // Return a list of a set of edges for a cell config. E.g. which edges are connected to
     // each other for that cell config.

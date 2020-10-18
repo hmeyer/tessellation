@@ -14,8 +14,7 @@ Tessellation implements [Manifold Dual Contouring](http://faculty.cs.tamu.edu/sc
 Create a unit sphere and tessellate it:
 
 ```rust
-extern crate nalgebra as na;
-extern crate tessellation;
+use nalgebra as na;
 //!
 struct UnitSphere {
   bbox : tessellation::BoundingBox<f64>

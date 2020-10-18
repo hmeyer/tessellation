@@ -7,8 +7,7 @@
 //! Create a unit sphere and tessellate it:
 //!
 //! ```rust
-//! extern crate nalgebra as na;
-//! extern crate tessellation;
+//! use nalgebra as na;
 //!
 //! struct UnitSphere {
 //!   bbox : tessellation::BoundingBox<f64>
@@ -39,17 +38,9 @@
 //! let triangles = mdc.tessellate().unwrap();
 //! ```
 #![warn(missing_docs)]
-extern crate alga;
-extern crate bbox;
-#[macro_use]
-extern crate lazy_static;
-extern crate nalgebra as na;
-extern crate num_traits;
-extern crate rand;
-extern crate rayon;
-extern crate time;
 
 pub use bbox::BoundingBox;
+use nalgebra as na;
 use std::fmt::Debug;
 
 mod bitset;
