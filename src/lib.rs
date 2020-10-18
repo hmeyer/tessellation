@@ -49,7 +49,6 @@ extern crate rand;
 extern crate rayon;
 extern crate time;
 
-use alga::general::RealField;
 pub use bbox::BoundingBox;
 use std::fmt::Debug;
 
@@ -63,6 +62,11 @@ mod vertex_index;
 
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
+
+/// A Combination of alga::general::RealField and na::RealField.
+pub trait RealField: alga::general::RealField + na::RealField {}
+impl RealField for f64 {}
+impl RealField for f32 {}
 
 /// Trait to be implemented by functions that should be tessellated.
 pub trait ImplicitFunction<S: Debug + RealField> {

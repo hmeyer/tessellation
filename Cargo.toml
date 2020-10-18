@@ -1,13 +1,13 @@
 [package]
 name = "tessellation"
-version = "0.7.5"
+version = "0.8.0"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
 
 description = "3d tessellation library."
 repository = "https://github.com/hmeyer/tessellation"
 readme = "README.md"
 keywords = ["tessellation", "3d", "manifold", "dual-contouring"]
-license = "GPL-3.0"
+license = "Apache-2.0 OR MIT"
 
 [lib]
 name = "tessellation"
@@ -15,18 +15,18 @@ path = "src/lib.rs"
 
 [dependencies]
 alga = "0.9"
-nalgebra = "0.19"
+nalgebra = "0.22"
 rand = "0.7"
 time = "0.1"
 rayon = "1.2"
 lazy_static = "1.4"
-bbox = "0.9"
+bbox = "0.11"
 num-traits = "0.2"
 
 [dev-dependencies]
 approx = "0.3"
 bencher = "0.1"
-implicit3d = "0.13"
+implicit3d = "0.14"
 
 [[bench]]
 name = "tessellation"

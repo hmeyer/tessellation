@@ -1,5 +1,4 @@
-use super::{AsUSize, ImplicitFunction};
-use alga::general::RealField;
+use super::{AsUSize, ImplicitFunction, RealField};
 use bbox::BoundingBox;
 use bitset::BitSet;
 use cell_configs::CELL_CONFIGS;
@@ -292,7 +291,10 @@ fn add_connected_vertices_in_subcell<S: RealField>(
     }
 }
 
-fn add_child_to_parent<S: RealField + Float + From<f32>>(child: &Vertex<S>, parent: &mut Vertex<S>) {
+fn add_child_to_parent<S: RealField + Float + From<f32>>(
+    child: &Vertex<S>,
+    parent: &mut Vertex<S>,
+) {
     parent.qef.borrow_mut().merge(&*child.qef.borrow());
     for dim in 0..3 {
         let relevant_neighbor = dim * 2 + (child.index[dim] & 1);
@@ -621,7 +623,8 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
                     }
                 }
                 true
-            }).map(|(k, _)| *k)
+            })
+            .map(|(k, _)| *k)
             .collect();
         for k in keys_to_remove {
             value_grid.remove(&k);
@@ -797,7 +800,8 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
                             edge: Edge::from_usize(edge),
                             index: idx,
                         })
-                    }).collect();
+                    })
+                    .collect();
                 let cell_origin = self.origin
                     + na::Vector3::new(
                         From::from(idx[0] as f32),

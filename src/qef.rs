@@ -1,4 +1,4 @@
-use alga::general::RealField;
+use super::RealField;
 use bbox::BoundingBox;
 use na;
 use num_traits::Float;
@@ -134,7 +134,8 @@ impl<S: 'static + RealField + Float + Debug + From<f32>> Qef<S> {
     }
     fn error(&self, point: &na::Vector3<S>, ma: &na::Matrix3<S>) -> S {
         let _2_as_s: S = convert::From::from(2f32);
-        self.btb - _2_as_s * na::Matrix::dot(point, &self.atb) + na::Matrix::dot(point, &(*ma * *point))
+        self.btb - _2_as_s * na::Matrix::dot(point, &self.atb)
+            + na::Matrix::dot(point, &(*ma * *point))
     }
     pub fn merge(&mut self, other: &Qef<S>) {
         for i in 0..6 {
