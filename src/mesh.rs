@@ -49,15 +49,25 @@ impl<S: RealField + Debug> Mesh<S> {
 mod test {
     use super::*;
 
+    fn f32slice_eq(a: &[f32], b: &[f32]) -> bool {
+        assert_eq!(a.len(), b.len());
+        for i in 0..a.len() {
+            if (a[i] - b[i]).abs() > f32::EPSILON {
+                return false;
+            }
+        }
+        true
+    }
+
     #[test]
     fn simple() {
         let m = Mesh {
             vertices: vec![[0., 0., 0.], [1., 0., 0.], [0., 1., 0.]],
             faces: vec![[0, 1, 2]],
         };
-        assert_eq!(m.normal32(0), [0., 0., 1.]);
-        assert_eq!(m.vertex32(0), [0., 0., 0.]);
-        assert_eq!(m.vertex32(1), [1., 0., 0.]);
-        assert_eq!(m.vertex32(2), [0., 1., 0.]);
+        assert!(f32slice_eq(&m.normal32(0), &[0., 0., 1.]));
+        assert!(f32slice_eq(&m.vertex32(0), &[0., 0., 0.]));
+        assert!(f32slice_eq(&m.vertex32(1), &[1., 0., 0.]));
+        assert!(f32slice_eq(&m.vertex32(2), &[0., 1., 0.]));
     }
 }
