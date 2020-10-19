@@ -61,7 +61,7 @@ impl BitSet {
 }
 
 impl fmt::Display for BitSet {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "BitSet[")?;
         let mut index = 1;
         let mut val = self.0;
