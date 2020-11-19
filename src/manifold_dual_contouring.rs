@@ -231,7 +231,7 @@ fn pow2roundup(x: usize) -> usize {
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-    x |= x >> 32;
+    x |= x.wrapping_shr(32);
     x + 1
 }
 
