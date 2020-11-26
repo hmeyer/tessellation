@@ -398,17 +398,17 @@ fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Ve
 }
 
 struct Timer {
-    t: std::time::Instant,
+    t: instant::Instant,
 }
 
 impl Timer {
     fn new() -> Timer {
         Timer {
-            t: std::time::Instant::now(),
+            t: instant::Instant::now(),
         }
     }
     fn elapsed(&mut self) -> std::time::Duration {
-        let now = std::time::Instant::now();
+        let now = instant::Instant::now();
         let result = now - self.t;
         self.t = now;
         result
