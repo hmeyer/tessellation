@@ -10,6 +10,7 @@ use crate::{
 use bbox::BoundingBox;
 use nalgebra as na;
 use num_traits::Float;
+#[cfg(not(target_arch="wasm32"))]
 use rayon::prelude::*;
 use std::{
     cell::{Cell, RefCell},
@@ -607,8 +608,11 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     fn compact_value_grid(&mut self) {
         // Collect all indexes to remove.
         let value_grid = &mut self.value_grid;
-        let keys_to_remove: Vec<_> = value_grid
-            .par_iter()
+        #[cfg(not(target_arch="wasm32"))]
+        let value_grid_iter = value_grid.par_iter();
+        #[cfg(target_arch="wasm32")]
+        let value_grid_iter = value_grid.iter();
+        let keys_to_remove: Vec<_> = value_grid_iter
             .filter(|&(idx, &v)| {
                 if idx[0] == 0 || idx[1] == 0 || idx[2] == 0 {
                     // This grid cell does not have neighbors in some directions. Ignore.
