@@ -77,18 +77,18 @@ pub trait ImplicitFunction<S: Debug + RealField> {
 /// Trait which allows to convert Self to usize, since To<usize> is not implemented by f32 and f64.
 pub trait AsUSize {
     /// Convert Self to usize.
-    fn as_usize(self) -> usize;
+    fn as_usize(&self) -> usize;
 }
 
 impl AsUSize for f32 {
-    fn as_usize(self) -> usize {
-        self as usize
+    fn as_usize(&self) -> usize {
+        *self as usize
     }
 }
 
 impl AsUSize for f64 {
-    fn as_usize(self) -> usize {
-        self as usize
+    fn as_usize(&self) -> usize {
+        *self as usize
     }
 }
 
