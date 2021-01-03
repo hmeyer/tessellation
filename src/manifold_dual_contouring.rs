@@ -1052,10 +1052,10 @@ mod tests {
             &self.bbox
         }
         fn value(&self, p: &na::Point3<f64>) -> f64 {
-            return na::Vector3::new(p.x, p.y, p.z).norm() - 1.0;
+            na::Vector3::new(p.x, p.y, p.z).norm() - 1.0
         }
         fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-            return na::Vector3::new(p.x, p.y, p.z).normalize();
+            na::Vector3::new(p.x, p.y, p.z).normalize()
         }
     }
 
