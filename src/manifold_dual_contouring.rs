@@ -245,7 +245,7 @@ fn get_connected_edges(edge: Edge, cell: BitSet) -> BitSet {
     panic!("Did not find edge_set for {:?} and {:?}", edge, cell);
 }
 
-// Returns all BitSets containing  egdes connected to one of edge_set in this cell.
+// Returns all BitSets containing egdes connected to one of edge_set in this cell.
 fn get_connected_edges_from_edge_set(edge_set: BitSet, cell: BitSet) -> Vec<BitSet> {
     let mut result = Vec::new();
     for &cell_edge_set in CELL_CONFIGS[cell.as_u32() as usize].iter() {
@@ -994,6 +994,7 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
 mod tests {
     use super::get_connected_edges_from_edge_set;
     use crate::bitset::BitSet;
+    use nalgebra as na;
     //  Corner indexes
     //
     //      6---------------7
@@ -1030,5 +1031,59 @@ mod tests {
         assert_eq!(connected_edges.len(), 2);
         assert!(connected_edges.contains(&BitSet::from_4bits(5, 5, 6, 10)));
         assert!(connected_edges.contains(&BitSet::from_4bits(3, 3, 4, 11)));
+    }
+
+    struct UnitSphere {
+        bbox: super::BoundingBox<f64>,
+    }
+    impl UnitSphere {
+        fn new() -> UnitSphere {
+            UnitSphere {
+                bbox: super::BoundingBox::new(
+                    &na::Point3::new(-1., -1., -1.),
+                    &na::Point3::new(1., 1., 1.),
+                ),
+            }
+        }
+    }
+
+    impl super::ImplicitFunction<f64> for UnitSphere {
+        fn bbox(&self) -> &super::BoundingBox<f64> {
+            &self.bbox
+        }
+        fn value(&self, p: &na::Point3<f64>) -> f64 {
+            return na::Vector3::new(p.x, p.y, p.z).norm() - 1.0;
+        }
+        fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
+            return na::Vector3::new(p.x, p.y, p.z).normalize();
+        }
+    }
+
+    #[test]
+    fn unit_sphere_without_simplification() -> Result<(), crate::mesh::MeshError> {
+        let sphere = UnitSphere::new();
+        let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.2, 0.0);
+        let mesh = mdc.tessellate().unwrap();
+        println!(
+            "mesh hash {} vertices and {} faces",
+            mesh.vertices.len(),
+            mesh.faces.len()
+        );
+        mesh.is_closed()
+    }
+
+    #[test]
+    #[ignore]
+    // This test exposes https://github.com/hmeyer/tessellation/issues/7
+    fn unit_sphere_with_simplification() -> Result<(), crate::mesh::MeshError> {
+        let sphere = UnitSphere::new();
+        let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
+        let mesh = mdc.tessellate().unwrap();
+        println!(
+            "mesh hash {} vertices and {} faces",
+            mesh.vertices.len(),
+            mesh.faces.len()
+        );
+        mesh.is_closed()
     }
 }

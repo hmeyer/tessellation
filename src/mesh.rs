@@ -1,6 +1,21 @@
 use alga::general::RealField;
 use nalgebra as na;
+use std::error::Error;
+use std::fmt;
 use std::fmt::Debug;
+
+#[derive(Debug, PartialEq)]
+pub struct MeshError {
+    msg: String,
+}
+
+impl fmt::Display for MeshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "MeshError {}", self.msg)
+    }
+}
+
+impl Error for MeshError {}
 
 /// Mesh that will be returned from tessellate.
 #[derive(Clone, Debug, PartialEq)]
@@ -42,6 +57,42 @@ impl<S: RealField + Debug> Mesh<S> {
             self.vertices[i][2].into(),
         );
         [v.0 as f32, v.1 as f32, v.2 as f32]
+    }
+    /// Returns whether or not the mesh is closed.
+    #[cfg(test)]
+    pub fn is_closed(&self) -> Result<(), MeshError>
+    where
+        f64: From<S>,
+    {
+        let mut edge_to_face = std::collections::HashMap::new();
+        for (face_index, face) in self.faces.iter().enumerate() {
+            for i in 0..3 {
+                if let Some(existing_index) =
+                    edge_to_face.insert((face[i], face[(i + 1) % 3]), face_index)
+                {
+                    return Err(MeshError {
+                        msg: format!(
+                            "Both face #{} and face #{} share edge {}->{}.",
+                            existing_index,
+                            face_index,
+                            i,
+                            (i + 1) % 3
+                        ),
+                    });
+                }
+            }
+        }
+        for (edge, face_index) in edge_to_face.iter() {
+            if !edge_to_face.contains_key(&(edge.1, edge.0)) {
+                return Err(MeshError {
+                    msg: format!(
+                        "Unmachted edge {}->{} of face #{}.",
+                        edge.0, edge.1, face_index
+                    ),
+                });
+            }
+        }
+        Ok(())
     }
 }
 
