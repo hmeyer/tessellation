@@ -15,18 +15,18 @@ name = "tessellation"
 path = "src/lib.rs"
 
 [dependencies]
-alga = "0.9"
-nalgebra = "0.22"
-rand = "0.7"
-rayon = "1.2"
-once_cell = "1.4"
-bbox = "0.11"
-num-traits = "0.2"
+bbox = "0.11.2"
+nalgebra = "0.27.1"
+num-traits = "0.2.14"
+once_cell = "1.7.2"
+rand = "0.8.3"
+rayon = "1.5.1"
+simba = "0.5.1"
 
 [dev-dependencies]
-approx = "0.3"
-bencher = "0.1"
-implicit3d = "0.14"
+approx = "0.5.0"
+bencher = "0.1.5"
+implicit3d = "0.14.2"
 
 [[bench]]
 name = "tessellation"
@@ -36,3 +36,7 @@ harness = false
 [badges]
 travis-ci = { repository = "hmeyer/tessellation", branch = "master" }
 codecov = { repository = "hmeyer/tessellation", branch = "master", service = "github" }
+
+[patch.crates-io]
+bbox = { git = "https://github.com/dflemstr/bbox.git" }
+implicit3d = { git = "https://github.com/dflemstr/implicit3d.git" }

@@ -55,7 +55,7 @@ pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
 
 /// A Combination of alga::general::RealField and na::RealField.
-pub trait RealField: alga::general::RealField + na::RealField {}
+pub trait RealField: simba::scalar::RealField + na::RealField {}
 impl RealField for f64 {}
 impl RealField for f32 {}
 
