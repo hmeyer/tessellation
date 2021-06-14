@@ -1,4 +1,4 @@
-use alga::general::RealField;
+use simba::scalar::RealField;
 use nalgebra as na;
 use std::error::Error;
 use std::fmt;
