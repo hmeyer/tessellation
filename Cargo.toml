@@ -14,8 +14,14 @@ license = "Apache-2.0 OR MIT"
 name = "tessellation"
 path = "src/lib.rs"
 
+[features]
+default = ["wasm-bindgen"]
+stdweb = ["instant/stdweb"]
+wasm-bindgen = ["instant/wasm-bindgen"]
+
 [dependencies]
 alga = "0.9"
+instant = "0.1"
 nalgebra = "0.22"
 rand = "0.7"
 rayon = "1.2"
