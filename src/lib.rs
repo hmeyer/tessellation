@@ -26,10 +26,10 @@
 //!      &self.bbox
 //!    }
 //!   fn value(&self, p: &na::Point3<f64>) -> f64 {
-//!     return na::Vector3::new(p.x, p.y, p.z).norm() - 1.0;
+//!     na::Vector3::new(p.x, p.y, p.z).norm() - 1.0
 //!   }
 //!   fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-//!     return na::Vector3::new(p.x, p.y, p.z).normalize();
+//!     na::Vector3::new(p.x, p.y, p.z).normalize()
 //!   }
 //! }
 //!
@@ -54,8 +54,8 @@ mod vertex_index;
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
 
-/// A Combination of alga::general::RealField and na::RealField.
-pub trait RealField: alga::general::RealField + na::RealField {}
+/// A trait alias for nalgebra's RealField, implemented for f64 and f32.
+pub trait RealField: na::RealField + Copy {}
 impl RealField for f64 {}
 impl RealField for f32 {}
 
@@ -91,7 +91,3 @@ impl AsUSize for f64 {
         *self as usize
     }
 }
-
-#[cfg(test)]
-#[macro_use]
-extern crate approx;

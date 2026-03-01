@@ -1,4 +1,4 @@
-use alga::general::RealField;
+use crate::RealField;
 use nalgebra as na;
 use std::fmt::Debug;
 

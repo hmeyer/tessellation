@@ -2,7 +2,7 @@ use crate::{plane::Plane, RealField};
 use bbox::BoundingBox;
 use nalgebra as na;
 use num_traits::Float;
-use std::{convert, fmt::Debug};
+use std::fmt::Debug;
 
 pub const EPSILON: f32 = 1e-10;
 
@@ -25,21 +25,14 @@ pub struct Qef<S: RealField + Debug> {
 
 impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
     pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
+        let zero: S = From::from(0f32);
         let mut qef = Qef {
             solution: na::Vector3::new(S::nan(), S::nan(), S::nan()),
-            sum: na::Vector3::new(
-                convert::From::from(0.),
-                convert::From::from(0.),
-                convert::From::from(0.),
-            ),
+            sum: na::Vector3::new(zero, zero, zero),
             num: planes.len(),
-            ata: [convert::From::from(0.); 6],
-            atb: na::Vector3::new(
-                convert::From::from(0.),
-                convert::From::from(0.),
-                convert::From::from(0.),
-            ),
-            btb: convert::From::from(0.),
+            ata: [zero; 6],
+            atb: na::Vector3::new(zero, zero, zero),
+            btb: zero,
             error: S::nan(),
             bbox,
         };
@@ -65,7 +58,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
     pub fn solve(&mut self) {
         let m = &self.ata;
         let ma = na::Matrix3::new(m[0], m[1], m[2], m[1], m[3], m[4], m[2], m[4], m[5]);
-        let sum_as_s: S = convert::From::from(self.num as f32);
+        let sum_as_s: S = From::from(self.num as f32);
         let mean: na::Vector3<S> = self.sum / sum_as_s;
         if let Some(inv) = ma.try_inverse() {
             let b_rel_mean: na::Vector3<S> = self.atb - ma * mean;
@@ -79,7 +72,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
             self.solution.y,
             self.solution.z,
         )) {
-            let accuracy = (self.bbox.max.x - self.bbox.min.x) / convert::From::from(100.0);
+            let accuracy = (self.bbox.max.x - self.bbox.min.x) / From::from(100.0f32);
             self.solution = self.search_solution(accuracy, &mut self.bbox.clone(), &ma);
             debug_assert!(
                 self.bbox.dilate(accuracy).contains(&na::Point3::new(
@@ -102,11 +95,11 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
         ma: &na::Matrix3<S>,
     ) -> na::Vector3<S> {
         // Generate bbox mid-point and error value on mid-point.
-        // TODO: use proper apis
+        let half: S = From::from(0.5f32);
         let mid = na::Point3::new(
-            (bbox.max.x + bbox.min.x) * convert::From::from(0.5),
-            (bbox.max.y + bbox.min.y) * convert::From::from(0.5),
-            (bbox.max.z + bbox.min.z) * convert::From::from(0.5),
+            (bbox.max.x + bbox.min.x) * half,
+            (bbox.max.y + bbox.min.y) * half,
+            (bbox.max.z + bbox.min.z) * half,
         );
         let na_mid = na::Vector3::new(mid.x, mid.y, mid.z);
         if bbox.max.x - bbox.min.x <= accuracy {
@@ -119,7 +112,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
         // might need to do something more clever here.
         for dim in 0..3 {
             let mut d_mid = na_mid;
-            d_mid[dim] += convert::From::from(EPSILON);
+            d_mid[dim] += From::from(EPSILON);
             let d_error = self.error(&d_mid, ma);
             if d_error < mid_error {
                 bbox.min[dim] = mid[dim];
@@ -130,9 +123,8 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
         self.search_solution(accuracy, bbox, ma)
     }
     fn error(&self, point: &na::Vector3<S>, ma: &na::Matrix3<S>) -> S {
-        let _2_as_s: S = convert::From::from(2f32);
-        self.btb - _2_as_s * na::Matrix::dot(point, &self.atb)
-            + na::Matrix::dot(point, &(*ma * *point))
+        let two: S = From::from(2f32);
+        self.btb - two * na::Matrix::dot(point, &self.atb) + na::Matrix::dot(point, &(*ma * *point))
     }
     pub fn merge(&mut self, other: &Qef<S>) {
         for i in 0..6 {
@@ -150,6 +142,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
 mod tests {
     use super::Plane;
     use super::{BoundingBox, Qef};
+    use approx::relative_eq;
     use nalgebra as na;
 
     #[test]

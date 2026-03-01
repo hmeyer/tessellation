@@ -16,6 +16,7 @@ use std::{
     cmp,
     collections::{BTreeSet, HashMap},
     error, fmt,
+    sync::LazyLock,
 };
 
 // How accurately find zero crossings.
@@ -99,8 +100,7 @@ const QUADS: [[Edge; 4]; 3] = [
     [Edge::C, Edge::I, Edge::L, Edge::F],
 ];
 
-use once_cell::sync::Lazy;
-static OUTSIDE_EDGES_PER_CORNER: Lazy<[BitSet; 8]> = Lazy::new(|| {
+static OUTSIDE_EDGES_PER_CORNER: LazyLock<[BitSet; 8]> = LazyLock::new(|| {
     [
         BitSet::from_3bits(0, 1, 2),
         BitSet::from_3bits(0, 4, 5),
@@ -118,13 +118,7 @@ pub enum DualContouringError {
     HitZero(String),
 }
 
-impl error::Error for DualContouringError {
-    fn description(&self) -> &str {
-        match *self {
-            DualContouringError::HitZero(_) => "Hit zero value during grid sampling.",
-        }
-    }
-}
+impl error::Error for DualContouringError {}
 
 impl fmt::Display for DualContouringError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -343,7 +337,7 @@ fn subsample_euler_characteristics<S: RealField>(
 fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Vec<Vertex<S>> {
     let mut result = Vec::new();
     for (i, vertex) in base.iter().enumerate() {
-        if vertex.parent.get() == None {
+        if vertex.parent.get().is_none() {
             let mut neighbor_set = BTreeSet::new();
             neighbor_set.insert(i);
             add_connected_vertices_in_subcell(base, vertex, &mut neighbor_set);
@@ -368,7 +362,7 @@ fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Ve
             for &neighbor_index in &neighbor_set {
                 let child = &base[neighbor_index];
                 debug_assert!(
-                    child.parent.get() == None,
+                    child.parent.get().is_none(),
                     "child #{:?} already has parent #{:?}",
                     neighbor_index,
                     child.parent.get().unwrap()
@@ -833,8 +827,8 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     }
 
     fn get_edge_tangent_plane(&self, edge_index: &EdgeIndex) -> Plane<S> {
-        if let Some(ref plane) = self.edge_grid.borrow().get(&edge_index.base()) {
-            return **plane;
+        if let Some(plane) = self.edge_grid.borrow().get(&edge_index.base()) {
+            return *plane;
         }
         panic!(
             "could not find edge_point: {:?} -> {:?}",

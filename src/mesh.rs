@@ -1,21 +1,22 @@
-use alga::general::RealField;
+use crate::RealField;
 use nalgebra as na;
-use std::error::Error;
-use std::fmt;
 use std::fmt::Debug;
 
+#[cfg(test)]
 #[derive(Debug, PartialEq)]
 pub struct MeshError {
     msg: String,
 }
 
-impl fmt::Display for MeshError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+#[cfg(test)]
+impl std::fmt::Display for MeshError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "MeshError {}", self.msg)
     }
 }
 
-impl Error for MeshError {}
+#[cfg(test)]
+impl std::error::Error for MeshError {}
 
 /// Mesh that will be returned from tessellate.
 #[derive(Clone, Debug, PartialEq)]

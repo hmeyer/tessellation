@@ -48,12 +48,7 @@ impl BitSet {
     }
     #[cfg(test)]
     pub fn lowest(self) -> Option<usize> {
-        for p in 0..32 {
-            if (self.0 & (1 << p)) != 0 {
-                return Some(p);
-            }
-        }
-        None
+        (0..32).find(|&p| (self.0 & (1 << p)) != 0)
     }
     pub fn as_u32(self) -> u32 {
         self.0
@@ -230,11 +225,11 @@ mod tests {
 
     #[test]
     fn empty() {
-        assert_eq!(super::BitSet(0b0000_0000).empty(), true);
-        assert_eq!(super::BitSet(0b1000_0000).empty(), false);
-        assert_eq!(super::BitSet(0b0100_1100).empty(), false);
-        assert_eq!(super::BitSet(0b1100_1101).empty(), false);
-        assert_eq!(super::BitSet(0b1111_1111).empty(), false);
+        assert!(super::BitSet(0b0000_0000).empty());
+        assert!(!super::BitSet(0b1000_0000).empty());
+        assert!(!super::BitSet(0b0100_1100).empty());
+        assert!(!super::BitSet(0b1100_1101).empty());
+        assert!(!super::BitSet(0b1111_1111).empty());
     }
 
     #[test]

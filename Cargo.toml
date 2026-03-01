@@ -2,7 +2,8 @@
 name = "tessellation"
 version = "0.8.2"
 authors = ["Henning Meyer <tutmann@gmail.com>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.80"
 
 description = "3d tessellation library."
 repository = "https://github.com/hmeyer/tessellation"
@@ -15,24 +16,20 @@ name = "tessellation"
 path = "src/lib.rs"
 
 [dependencies]
-alga = "0.9"
-nalgebra = "0.22"
-rand = "0.7"
-rayon = "1.2"
-once_cell = "1.4"
-bbox = "0.11"
+nalgebra = "0.31"
+rand = "0.8"
+rayon = "1"
+bbox = "0.14"
 num-traits = "0.2"
 
 [dev-dependencies]
-approx = "0.3"
+approx = "0.5"
 bencher = "0.1"
-implicit3d = "0.14"
 
 [[bench]]
 name = "tessellation"
 path = "src/benches/tessellation.rs"
 harness = false
 
-[badges]
-travis-ci = { repository = "hmeyer/tessellation", branch = "master" }
-codecov = { repository = "hmeyer/tessellation", branch = "master", service = "github" }
+[lints.clippy]
+all = "warn"
