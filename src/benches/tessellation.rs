@@ -15,7 +15,7 @@ impl<
         S: ::std::fmt::Debug + ::num_traits::Float + From<f32> + RealField + implicit3d::RealField,
     > ImplicitFunction<S> for ObjectAdaptor<S>
 {
-    fn bbox(&self) -> &BoundingBox<S> {
+    fn bbox(&self) -> &BoundingBox<S, 3> {
         self.implicit.bbox()
     }
     fn value(&self, p: &na::Point3<S>) -> S {

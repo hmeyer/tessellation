@@ -99,8 +99,8 @@ const QUADS: [[Edge; 4]; 3] = [
     [Edge::C, Edge::I, Edge::L, Edge::F],
 ];
 
-use once_cell::sync::Lazy;
-static OUTSIDE_EDGES_PER_CORNER: Lazy<[BitSet; 8]> = Lazy::new(|| {
+use std::sync::LazyLock;
+static OUTSIDE_EDGES_PER_CORNER: LazyLock<[BitSet; 8]> = LazyLock::new(|| {
     [
         BitSet::from_3bits(0, 1, 2),
         BitSet::from_3bits(0, 4, 5),
@@ -118,13 +118,7 @@ pub enum DualContouringError {
     HitZero(String),
 }
 
-impl error::Error for DualContouringError {
-    fn description(&self) -> &str {
-        match *self {
-            DualContouringError::HitZero(_) => "Hit zero value during grid sampling.",
-        }
-    }
-}
+impl error::Error for DualContouringError {}
 
 impl fmt::Display for DualContouringError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -1034,7 +1028,7 @@ mod tests {
     }
 
     struct UnitSphere {
-        bbox: super::BoundingBox<f64>,
+        bbox: super::BoundingBox<f64, 3>,
     }
     impl UnitSphere {
         fn new() -> UnitSphere {
@@ -1048,7 +1042,7 @@ mod tests {
     }
 
     impl super::ImplicitFunction<f64> for UnitSphere {
-        fn bbox(&self) -> &super::BoundingBox<f64> {
+        fn bbox(&self) -> &super::BoundingBox<f64, 3> {
             &self.bbox
         }
         fn value(&self, p: &na::Point3<f64>) -> f64 {

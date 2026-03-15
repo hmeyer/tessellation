@@ -1,5 +1,5 @@
-use alga::general::RealField;
 use nalgebra as na;
+use nalgebra::RealField;
 use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug)]
