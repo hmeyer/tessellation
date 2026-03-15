@@ -20,11 +20,11 @@ pub struct Qef<S: RealField + Debug> {
     // Scalar BT * B
     btb: S,
     pub error: S,
-    bbox: BoundingBox<S>,
+    bbox: BoundingBox<S, 3>,
 }
 
 impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
-    pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S>) -> Qef<S> {
+    pub fn new(planes: &[Plane<S>], bbox: BoundingBox<S, 3>) -> Qef<S> {
         let mut qef = Qef {
             solution: na::Vector3::new(S::nan(), S::nan(), S::nan()),
             sum: na::Vector3::new(
@@ -98,7 +98,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
     fn search_solution(
         &self,
         accuracy: S,
-        bbox: &mut BoundingBox<S>,
+        bbox: &mut BoundingBox<S, 3>,
         ma: &na::Matrix3<S>,
     ) -> na::Vector3<S> {
         // Generate bbox mid-point and error value on mid-point.
@@ -150,6 +150,7 @@ impl<S: RealField + Float + Debug + From<f32>> Qef<S> {
 mod tests {
     use super::Plane;
     use super::{BoundingBox, Qef};
+    use approx::relative_eq;
     use nalgebra as na;
 
     #[test]
@@ -170,7 +171,7 @@ mod tests {
                     n: na::Vector3::new(2., 3., 4.).normalize(),
                 },
             ],
-            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
+            BoundingBox::<f64, 3>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(
@@ -197,7 +198,7 @@ mod tests {
                     n: na::Vector3::new(1., 1., 0.).normalize(),
                 },
             ],
-            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
+            BoundingBox::<f64, 3>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 1., 1.)),
         );
         qef.solve();
         assert!(relative_eq!(qef.solution, &na::Vector3::new(0., 0., 0.)));
@@ -220,7 +221,7 @@ mod tests {
                     n: na::Vector3::new(0., 0., 1.),
                 },
             ],
-            BoundingBox::<f64>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 2., 3.)),
+            BoundingBox::<f64, 3>::new(&na::Point3::new(0., 0., 0.), &na::Point3::new(1., 2., 3.)),
         );
         qef.solve();
         let expected_solution = na::Vector3::new(1., 2., 3.);

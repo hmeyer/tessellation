@@ -10,7 +10,7 @@
 //! use nalgebra as na;
 //!
 //! struct UnitSphere {
-//!   bbox : tessellation::BoundingBox<f64>
+//!   bbox : tessellation::BoundingBox<f64, 3>
 //! }
 //!
 //! impl UnitSphere {
@@ -22,7 +22,7 @@
 //! }
 //!
 //! impl tessellation::ImplicitFunction<f64> for UnitSphere {
-//!    fn bbox(&self) -> &tessellation::BoundingBox<f64> {
+//!    fn bbox(&self) -> &tessellation::BoundingBox<f64, 3> {
 //!      &self.bbox
 //!    }
 //!   fn value(&self, p: &na::Point3<f64>) -> f64 {
@@ -54,8 +54,8 @@ mod vertex_index;
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
 pub use self::mesh::Mesh;
 
-/// A Combination of alga::general::RealField and na::RealField.
-pub trait RealField: alga::general::RealField + na::RealField {}
+/// Trait alias for nalgebra's RealField.
+pub trait RealField: na::RealField + Copy {}
 impl RealField for f64 {}
 impl RealField for f32 {}
 
@@ -63,7 +63,7 @@ impl RealField for f32 {}
 pub trait ImplicitFunction<S: Debug + RealField> {
     /// Return a Bounding Box, which is essential, so the algorithm knows where to search for
     /// surfaces.
-    fn bbox(&self) -> &BoundingBox<S>;
+    fn bbox(&self) -> &BoundingBox<S, 3>;
     /// Evaluate the function on p and return the value. A value of zero signifies that p is on the
     /// surface to be tessellated. A negative value means p in inside the object. A positive value
     /// means p is outside the object.
@@ -92,6 +92,3 @@ impl AsUSize for f64 {
     }
 }
 
-#[cfg(test)]
-#[macro_use]
-extern crate approx;

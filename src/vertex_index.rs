@@ -15,8 +15,8 @@ use crate::bitset::BitSet;
 //  o-------0-------+         +-- higher indexes in x ---->
 
 // Face order X0, X1, Y0, Y1, Z0, Z1
-use once_cell::sync::Lazy;
-pub static EDGES_ON_FACE: Lazy<[BitSet; 6]> = Lazy::new(|| {
+use std::sync::LazyLock;
+pub static EDGES_ON_FACE: LazyLock<[BitSet; 6]> = LazyLock::new(|| {
     [
         BitSet::from_4bits(1, 2, 7, 8),
         BitSet::from_4bits(4, 5, 10, 11),
