@@ -1027,57 +1027,125 @@ mod tests {
         assert!(connected_edges.contains(&BitSet::from_4bits(3, 3, 4, 11)));
     }
 
-    struct UnitSphere {
+    // ---------------------------------------------------------------------------
+    // Test shapes
+    // ---------------------------------------------------------------------------
+
+    /// Sphere SDF centred at `center` with the given `radius`.
+    struct Sphere {
+        center: na::Point3<f64>,
+        radius: f64,
         bbox: super::BoundingBox<f64, 3>,
     }
-    impl UnitSphere {
-        fn new() -> UnitSphere {
-            UnitSphere {
-                bbox: super::BoundingBox::new(
-                    &na::Point3::new(-1., -1., -1.),
-                    &na::Point3::new(1., 1., 1.),
-                ),
-            }
+    impl Sphere {
+        fn new(center: na::Point3<f64>, radius: f64) -> Self {
+            let r = radius + 0.1; // small padding
+            let bbox = super::BoundingBox::new(
+                &na::Point3::new(center.x - r, center.y - r, center.z - r),
+                &na::Point3::new(center.x + r, center.y + r, center.z + r),
+            );
+            Sphere { center, radius, bbox }
+        }
+    }
+    impl super::ImplicitFunction<f64> for Sphere {
+        fn bbox(&self) -> &super::BoundingBox<f64, 3> { &self.bbox }
+        fn value(&self, p: &na::Point3<f64>) -> f64 {
+            (p - self.center).norm() - self.radius
+        }
+        fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
+            (p - self.center).normalize()
         }
     }
 
-    impl super::ImplicitFunction<f64> for UnitSphere {
-        fn bbox(&self) -> &super::BoundingBox<f64, 3> {
-            &self.bbox
+    /// Torus SDF lying in the xz-plane with major radius `major` and tube
+    /// radius `minor`.
+    struct Torus {
+        major: f64,
+        minor: f64,
+        bbox: super::BoundingBox<f64, 3>,
+    }
+    impl Torus {
+        fn new(major: f64, minor: f64) -> Self {
+            let r = major + minor + 0.1;
+            let bbox = super::BoundingBox::new(
+                &na::Point3::new(-r, -(minor + 0.1), -r),
+                &na::Point3::new( r,   minor + 0.1,   r),
+            );
+            Torus { major, minor, bbox }
         }
+    }
+    impl super::ImplicitFunction<f64> for Torus {
+        fn bbox(&self) -> &super::BoundingBox<f64, 3> { &self.bbox }
         fn value(&self, p: &na::Point3<f64>) -> f64 {
-            na::Vector3::new(p.x, p.y, p.z).norm() - 1.0
+            let q = (p.x * p.x + p.z * p.z).sqrt();
+            ((q - self.major).powi(2) + p.y * p.y).sqrt() - self.minor
         }
         fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-            na::Vector3::new(p.x, p.y, p.z).normalize()
+            let q = (p.x * p.x + p.z * p.z).sqrt();
+            let d = ((q - self.major).powi(2) + p.y * p.y).sqrt();
+            na::Vector3::new(
+                (q - self.major) * p.x / (q * d),
+                p.y / d,
+                (q - self.major) * p.z / (q * d),
+            )
         }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    /// Tessellate `f` at the given resolution (no simplification) and assert:
+    /// - the mesh is closed (no boundary edges), and
+    /// - every vertex lies within `res` of the zero surface.
+    fn tessellate_and_check(
+        f: &impl super::ImplicitFunction<f64>,
+        res: f64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut mdc = super::ManifoldDualContouring::new(f, res, 0.0);
+        let mesh = mdc.tessellate().unwrap();
+        mesh.is_closed()?;
+        for v in &mesh.vertices {
+            let p = na::Point3::new(v[0], v[1], v[2]);
+            assert!(
+                f.value(&p).abs() < res,
+                "vertex {v:?} is {:.4} from the surface (tolerance {res})",
+                f.value(&p).abs(),
+            );
+        }
+        Ok(())
+    }
+
+    // ---------------------------------------------------------------------------
+    // Tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn sphere_at_origin() -> Result<(), Box<dyn std::error::Error>> {
+        // Baseline: origin is inside the object.
+        tessellate_and_check(&Sphere::new(na::Point3::origin(), 1.0), 0.2)
     }
 
     #[test]
-    fn unit_sphere_without_simplification() -> Result<(), crate::mesh::MeshError> {
-        let sphere = UnitSphere::new();
-        let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.2, 0.0);
-        let mesh = mdc.tessellate().unwrap();
-        println!(
-            "mesh hash {} vertices and {} faces",
-            mesh.vertices.len(),
-            mesh.faces.len()
-        );
-        mesh.is_closed()
+    fn sphere_off_centre() -> Result<(), Box<dyn std::error::Error>> {
+        // Origin is well outside the object — exercises the bbox-discovery path.
+        tessellate_and_check(&Sphere::new(na::Point3::new(5.0, 3.0, -2.0), 1.0), 0.2)
+    }
+
+    #[test]
+    fn torus() -> Result<(), Box<dyn std::error::Error>> {
+        // Non-convex surface; the hole through the middle stresses boundary
+        // verification since the surface exits a naïve bbox in multiple places.
+        tessellate_and_check(&Torus::new(1.0, 0.3), 0.15)
     }
 
     #[test]
     #[ignore]
     // This test exposes https://github.com/hmeyer/tessellation/issues/7
-    fn unit_sphere_with_simplification() -> Result<(), crate::mesh::MeshError> {
-        let sphere = UnitSphere::new();
+    fn sphere_with_simplification() -> Result<(), Box<dyn std::error::Error>> {
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
         let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
         let mesh = mdc.tessellate().unwrap();
-        println!(
-            "mesh hash {} vertices and {} faces",
-            mesh.vertices.len(),
-            mesh.faces.len()
-        );
-        mesh.is_closed()
+        Ok(mesh.is_closed()?)
     }
 }
