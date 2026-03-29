@@ -38,22 +38,11 @@ impl BitSet {
     }
     #[cfg(test)]
     pub fn count(self) -> usize {
-        let mut result = 0;
-        for p in 0..32 {
-            if (self.0 & (1 << p)) != 0 {
-                result += 1;
-            }
-        }
-        result
+        self.0.count_ones() as usize
     }
     #[cfg(test)]
     pub fn lowest(self) -> Option<usize> {
-        for p in 0..32 {
-            if (self.0 & (1 << p)) != 0 {
-                return Some(p);
-            }
-        }
-        None
+        if self.0 == 0 { None } else { Some(self.0.trailing_zeros() as usize) }
     }
     pub fn as_u32(self) -> u32 {
         self.0
@@ -84,43 +73,9 @@ impl Iterator for BitSet {
         if self.0 == 0 {
             None
         } else {
-            let old = self.0;
-            self.0 &= self.0 - 1;
-            Some(match (!self.0) & old {
-                0x0000_0001 => 0,
-                0x0000_0002 => 1,
-                0x0000_0004 => 2,
-                0x0000_0008 => 3,
-                0x0000_0010 => 4,
-                0x0000_0020 => 5,
-                0x0000_0040 => 6,
-                0x0000_0080 => 7,
-                0x0000_0100 => 8,
-                0x0000_0200 => 9,
-                0x0000_0400 => 10,
-                0x0000_0800 => 11,
-                0x0000_1000 => 12,
-                0x0000_2000 => 13,
-                0x0000_4000 => 14,
-                0x0000_8000 => 15,
-                0x0001_0000 => 16,
-                0x0002_0000 => 17,
-                0x0004_0000 => 18,
-                0x0008_0000 => 19,
-                0x0010_0000 => 20,
-                0x0020_0000 => 21,
-                0x0040_0000 => 22,
-                0x0080_0000 => 23,
-                0x0100_0000 => 24,
-                0x0200_0000 => 25,
-                0x0400_0000 => 26,
-                0x0800_0000 => 27,
-                0x1000_0000 => 28,
-                0x2000_0000 => 29,
-                0x4000_0000 => 30,
-                0x8000_0000 => 31,
-                x => panic!("not a single bit: {:?}", x),
-            })
+            let bit = self.0.trailing_zeros() as usize;
+            self.0 &= self.0 - 1; // clear lowest set bit
+            Some(bit)
         }
     }
 }
@@ -244,5 +199,44 @@ mod tests {
         assert_eq!(b.next(), Some(3));
         assert_eq!(b.next(), Some(6));
         assert_eq!(b.next(), None);
+    }
+
+    #[test]
+    fn iterate_empty() {
+        let mut b = super::BitSet(0);
+        assert_eq!(b.next(), None);
+    }
+
+    #[test]
+    fn iterate_bit0() {
+        let mut b = super::BitSet(1);
+        assert_eq!(b.next(), Some(0));
+        assert_eq!(b.next(), None);
+    }
+
+    #[test]
+    fn iterate_bit31() {
+        let mut b = super::BitSet(1 << 31);
+        assert_eq!(b.next(), Some(31));
+        assert_eq!(b.next(), None);
+    }
+
+    #[test]
+    fn iterate_all_bits() {
+        let bits: Vec<usize> = super::BitSet(u32::MAX).collect();
+        assert_eq!(bits, (0..32).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn count_single_bit() {
+        assert_eq!(super::BitSet(1).count(), 1);
+        assert_eq!(super::BitSet(1 << 31).count(), 1);
+    }
+
+    #[test]
+    fn lowest_single_bits() {
+        assert_eq!(super::BitSet(1).lowest(), Some(0));
+        assert_eq!(super::BitSet(1 << 15).lowest(), Some(15));
+        assert_eq!(super::BitSet(1 << 31).lowest(), Some(31));
     }
 }
