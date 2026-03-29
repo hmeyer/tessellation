@@ -4,7 +4,7 @@ use implicit3d::{
 };
 use nalgebra as na;
 use num_traits::Float;
-use tessellation::{AsUSize, BoundingBox, ImplicitFunction, ManifoldDualContouring, RealField};
+use tessellation::{AsUSize, ImplicitFunction, ManifoldDualContouring, RealField};
 
 struct ObjectAdaptor<S: RealField> {
     implicit: Box<dyn implicit3d::Object<S>>,
@@ -15,9 +15,6 @@ impl<
         S: ::std::fmt::Debug + ::num_traits::Float + From<f32> + RealField + implicit3d::RealField,
     > ImplicitFunction<S> for ObjectAdaptor<S>
 {
-    fn bbox(&self) -> &BoundingBox<S, 3> {
-        self.implicit.bbox()
-    }
     fn value(&self, p: &na::Point3<S>) -> S {
         self.implicit.approx_value(p, self.resolution)
     }

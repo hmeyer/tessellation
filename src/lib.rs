@@ -9,37 +9,23 @@
 //! ```rust
 //! use nalgebra as na;
 //!
-//! struct UnitSphere {
-//!   bbox : tessellation::BoundingBox<f64, 3>
-//! }
-//!
-//! impl UnitSphere {
-//!   fn new() -> UnitSphere {
-//!     UnitSphere {
-//!       bbox: tessellation::BoundingBox::new(&na::Point3::new(-1., -1., -1.),
-//!                                            &na::Point3::new( 1.,  1.,  1.)) }
-//!   }
-//! }
+//! struct UnitSphere;
 //!
 //! impl tessellation::ImplicitFunction<f64> for UnitSphere {
-//!    fn bbox(&self) -> &tessellation::BoundingBox<f64, 3> {
-//!      &self.bbox
-//!    }
 //!   fn value(&self, p: &na::Point3<f64>) -> f64 {
-//!     return na::Vector3::new(p.x, p.y, p.z).norm() - 1.0;
+//!     na::Vector3::new(p.x, p.y, p.z).norm() - 1.0
 //!   }
 //!   fn normal(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-//!     return na::Vector3::new(p.x, p.y, p.z).normalize();
+//!     na::Vector3::new(p.x, p.y, p.z).normalize()
 //!   }
 //! }
 //!
-//! let sphere = UnitSphere::new();
-//! let mut mdc =  tessellation::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
+//! let sphere = UnitSphere;
+//! let mut mdc = tessellation::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
 //! let triangles = mdc.tessellate().unwrap();
 //! ```
 #![warn(missing_docs)]
 
-pub use bbox::BoundingBox;
 use nalgebra as na;
 use std::fmt::Debug;
 
@@ -61,9 +47,6 @@ impl RealField for f32 {}
 
 /// Trait to be implemented by functions that should be tessellated.
 pub trait ImplicitFunction<S: Debug + RealField> {
-    /// Return a Bounding Box, which is essential, so the algorithm knows where to search for
-    /// surfaces.
-    fn bbox(&self) -> &BoundingBox<S, 3>;
     /// Evaluate the function on p and return the value. A value of zero signifies that p is on the
     /// surface to be tessellated. A negative value means p in inside the object. A positive value
     /// means p is outside the object.

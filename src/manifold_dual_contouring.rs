@@ -408,6 +408,305 @@ impl Timer {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Bounding-box discovery
+// ---------------------------------------------------------------------------
+
+// Follow the implicit function's gradient downhill from a perturbed origin to find
+// a point that is inside (f < 0) or at the nearest surface point, then step inside.
+// The slight initial perturbation avoids degenerate normals at exact symmetry axes
+// (e.g. a torus lying in the xz-plane has an undefined normal at the origin).
+fn find_hint<S: Float + RealField + From<f32>>(
+    f: &dyn ImplicitFunction<S>,
+    res: S,
+) -> na::Point3<S> {
+    let zero: S = From::from(0f32);
+    let eps: S = From::from(0.001f32);
+    let mut p = na::Point3::new(eps, eps, eps);
+    for _ in 0..1000 {
+        let v = f.value(&p);
+        if v < zero {
+            return p;
+        }
+        let n = f.normal(&p);
+        let p_new = p - n * v;
+        let step = (p_new - p).norm();
+        if !step.is_finite() || step < res {
+            break;
+        }
+        p = p_new;
+    }
+    // p is at (or near) the nearest surface point from outside; step inward by res.
+    p - f.normal(&p) * res
+}
+
+// Sphere-march from `start` along `dir` until the sign of f changes.
+// Returns the first point past the zero crossing, or None if max distance exceeded.
+// Precondition: f.value(start) < 0  (start is inside the object).
+// find_hint guarantees this, which also means init_sign = -1 and the march correctly
+// detects the exit from the object.  If f(start) == 0 the march still terminates
+// but each step returns immediately, giving a near-hint AABB that verify_and_expand
+// will then expand to the true surface extents.
+fn march_axis<S: Float + RealField + From<f32>>(
+    f: &dyn ImplicitFunction<S>,
+    start: na::Point3<S>,
+    dir: na::Vector3<S>,
+    res: S,
+) -> Option<na::Point3<S>> {
+    let max_dist: S = From::from(1000.0f32);
+    let mut p = start;
+    let mut v = f.value(&p);
+    let init_sign = Float::signum(v);
+    for _ in 0..100_000 {
+        let step = Float::max(Float::abs(v), res);
+        p += dir * step;
+        if (p - start).norm() > max_dist {
+            return None;
+        }
+        v = f.value(&p);
+        if Float::signum(v) != init_sign {
+            return Some(p);
+        }
+    }
+    None
+}
+
+// Returns true when the three circles (centre = vertex, radius = SDF value) share a
+// common intersection point, which proves the zero surface cannot cross the triangle.
+// All three vertices are assumed co-planar.
+fn circles_have_triple_intersection<S: Float + RealField + From<f32>>(
+    a: na::Point3<S>,
+    ra: S,
+    b: na::Point3<S>,
+    rb: S,
+    c: na::Point3<S>,
+    rc: S,
+) -> bool {
+    let zero: S = From::from(0f32);
+    let d = (b - a).norm();
+    if d <= zero {
+        return true; // degenerate: A == B
+    }
+    // Circles A and B must overlap.
+    if ra + rb < d {
+        return false;
+    }
+    // 2-D coordinates in the plane of A, B, C: A at origin, B along +x.
+    let e1 = (b - a) / d;
+    let ca = c - a;
+    let cx = e1.dot(&ca);
+    let cy = (ca - e1 * cx).norm();
+
+    // x-coordinate of the intersection points of circles A and B.
+    let x = (d * d + ra * ra - rb * rb) / (d + d);
+    let y_sq = ra * ra - x * x;
+    if y_sq < zero {
+        return false;
+    }
+    let y = Float::sqrt(y_sq);
+
+    // Check both intersection points against circle C = (cx, cy, rc).
+    let dx = x - cx;
+    let in_c = |py: S| dx * dx + (py - cy) * (py - cy) <= rc * rc;
+    in_c(y) || in_c(-y)
+}
+
+// Checks whether the zero surface can exit through triangle A-B-C.
+// Returns None if the triangle is safe, or Some(d) where d is the distance the
+// containing face must be shifted outward to clear the surface.
+fn check_triangle<S: Float + RealField + From<f32>>(
+    f: &dyn ImplicitFunction<S>,
+    res: S,
+    a: na::Point3<S>,
+    va: S,
+    b: na::Point3<S>,
+    vb: S,
+    c: na::Point3<S>,
+    vc: S,
+) -> Option<S> {
+    let zero: S = From::from(0f32);
+    // Any corner inside the object requires the face to expand.
+    if va <= zero {
+        return Some(Float::abs(va));
+    }
+    if vb <= zero {
+        return Some(Float::abs(vb));
+    }
+    if vc <= zero {
+        return Some(Float::abs(vc));
+    }
+    // Base case: triangle at (or below) grid resolution — assume safe.
+    let ab = (b - a).norm();
+    let bc = (c - b).norm();
+    let ca = (a - c).norm();
+    let longest = Float::max(Float::max(ab, bc), ca);
+    if longest < res {
+        return None;
+    }
+    // Termination via triple-circle test.
+    if circles_have_triple_intersection(a, va, b, vb, c, vc) {
+        return None;
+    }
+    // Bisect the longest edge; the two halves each have longest edge ≤ original/2,
+    // which guarantees convergence to `res` in O(log(longest/res)) levels.
+    let two: S = From::from(2f32);
+    let (p0, vp0, p1, vp1, opp, vopp) = if ab >= bc && ab >= ca {
+        (a, va, b, vb, c, vc)
+    } else if bc >= ca {
+        (b, vb, c, vc, a, va)
+    } else {
+        (c, vc, a, va, b, vb)
+    };
+    let mid = na::Point3::new(
+        (p0.x + p1.x) / two,
+        (p0.y + p1.y) / two,
+        (p0.z + p1.z) / two,
+    );
+    let vmid = f.value(&mid);
+    if vmid <= zero {
+        return Some(Float::abs(vmid));
+    }
+    check_triangle(f, res, p0, vp0, mid, vmid, opp, vopp)
+        .or_else(|| check_triangle(f, res, mid, vmid, p1, vp1, opp, vopp))
+}
+
+// Returns the four corners of an axis-aligned face of `bbox`.
+// axis: 0 = X, 1 = Y, 2 = Z; is_max: false = min face, true = max face.
+fn face_corners<S: Float + RealField + From<f32>>(
+    bbox: &BoundingBox<S, 3>,
+    axis: usize,
+    is_max: bool,
+) -> [na::Point3<S>; 4] {
+    let a1 = (axis + 1) % 3;
+    let a2 = (axis + 2) % 3;
+    let fixed = if is_max { bbox.max[axis] } else { bbox.min[axis] };
+    let zero: S = From::from(0f32);
+    let mk = |v1: S, v2: S| -> na::Point3<S> {
+        let mut p = na::Point3::new(zero, zero, zero);
+        p[axis] = fixed;
+        p[a1] = v1;
+        p[a2] = v2;
+        p
+    };
+    [
+        mk(bbox.min[a1], bbox.min[a2]),
+        mk(bbox.max[a1], bbox.min[a2]),
+        mk(bbox.min[a1], bbox.max[a2]),
+        mk(bbox.max[a1], bbox.max[a2]),
+    ]
+}
+
+// Verify all six faces of `bbox` and expand each face outward until the zero surface
+// does not exit through it.
+//
+// Each expansion shifts the face by at least `res`, so the loop terminates in at most
+// O(surface_extent / res) iterations per face.  The limit of 10_000 is a defensive
+// safety-cap for degenerate functions that somehow evade the SDF guarantee.
+fn verify_and_expand<S: Float + RealField + From<f32>>(
+    f: &dyn ImplicitFunction<S>,
+    res: S,
+    bbox: &mut BoundingBox<S, 3>,
+) {
+    for axis in 0..3usize {
+        for &is_max in &[false, true] {
+            for _ in 0..10_000 {
+                let corners = face_corners(bbox, axis, is_max);
+                let v = [
+                    f.value(&corners[0]),
+                    f.value(&corners[1]),
+                    f.value(&corners[2]),
+                    f.value(&corners[3]),
+                ];
+                // The quad is split into two triangles.
+                let unsafe_dist =
+                    check_triangle(f, res, corners[0], v[0], corners[1], v[1], corners[2], v[2])
+                        .or_else(|| {
+                            check_triangle(
+                                f, res, corners[1], v[1], corners[3], v[3], corners[2], v[2],
+                            )
+                        });
+                match unsafe_dist {
+                    None => break,
+                    Some(d) => {
+                        if is_max {
+                            bbox.max[axis] += d + res;
+                        } else {
+                            bbox.min[axis] -= d + res;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Discover an axis-aligned bounding box for the zero surface of `f` by
+// sphere-marching outward from an interior hint point, then verifying and
+// expanding each face until the surface is fully enclosed.
+fn find_bounds<S: Float + RealField + From<f32>>(
+    f: &dyn ImplicitFunction<S>,
+    res: S,
+) -> BoundingBox<S, 3> {
+    let hint = find_hint(f, res);
+
+    let zero: S = From::from(0f32);
+    let one: S = From::from(1f32);
+    let dirs: [na::Vector3<S>; 6] = [
+        na::Vector3::new(one, zero, zero),
+        na::Vector3::new(-one, zero, zero),
+        na::Vector3::new(zero, one, zero),
+        na::Vector3::new(zero, -one, zero),
+        na::Vector3::new(zero, zero, one),
+        na::Vector3::new(zero, zero, -one),
+    ];
+
+    let mut surface_points: Vec<na::Point3<S>> = Vec::new();
+    for dir in dirs {
+        if let Some(p) = march_axis(f, hint, dir, res) {
+            surface_points.push(p);
+        }
+    }
+
+    assert!(
+        !surface_points.is_empty(),
+        "tessellation: could not find any surface near the origin"
+    );
+
+    let min_pt = na::Point3::new(
+        surface_points
+            .iter()
+            .map(|p| p.x)
+            .fold(surface_points[0].x, |a, b| Float::min(a, b)),
+        surface_points
+            .iter()
+            .map(|p| p.y)
+            .fold(surface_points[0].y, |a, b| Float::min(a, b)),
+        surface_points
+            .iter()
+            .map(|p| p.z)
+            .fold(surface_points[0].z, |a, b| Float::min(a, b)),
+    );
+    let max_pt = na::Point3::new(
+        surface_points
+            .iter()
+            .map(|p| p.x)
+            .fold(surface_points[0].x, |a, b| Float::max(a, b)),
+        surface_points
+            .iter()
+            .map(|p| p.y)
+            .fold(surface_points[0].y, |a, b| Float::max(a, b)),
+        surface_points
+            .iter()
+            .map(|p| p.z)
+            .fold(surface_points[0].z, |a, b| Float::max(a, b)),
+    );
+
+    let pad = na::Vector3::new(res, res, res);
+    let mut bbox = BoundingBox::new(&(min_pt - pad), &(max_pt + pad));
+    verify_and_expand(f, res, &mut bbox);
+    bbox
+}
+
 impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, S> {
     /// Constructor
     /// f: function to tessellate
@@ -418,17 +717,10 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
         res: S,
         relative_error: S,
     ) -> ManifoldDualContouring<'a, S> {
-        let one: S = From::from(1f32);
-        let mut bbox = f.bbox().clone();
-        bbox.dilate(one + res * From::from(1.1f32));
         ManifoldDualContouring {
             function: f,
-            origin: bbox.min,
-            dim: [
-                Float::ceil(bbox.dim()[0] / res).as_usize(),
-                Float::ceil(bbox.dim()[1] / res).as_usize(),
-                Float::ceil(bbox.dim()[2] / res).as_usize(),
-            ],
+            origin: na::Point3::origin(),
+            dim: [0, 0, 0],
             mesh: RefCell::new(Mesh {
                 vertices: Vec::new(),
                 faces: Vec::new(),
@@ -443,10 +735,18 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     }
     /// Tessellate the given function.
     pub fn tessellate(&mut self) -> Option<Mesh<S>> {
+        let one: S = From::from(1f32);
+        let mut bbox = find_bounds(self.function, self.res);
+        bbox.dilate(one + self.res * From::from(1.1f32));
+        self.origin = bbox.min;
+        self.dim = std::array::from_fn(|i| Float::ceil(bbox.dim()[i] / self.res).as_usize());
         println!(
-            "ManifoldDualContouring: res: {:} {:?}",
+            "ManifoldDualContouring: res: {:} origin: ({:}, {:}, {:}) dim: {:?}",
             self.res,
-            self.function.bbox()
+            self.origin.x,
+            self.origin.y,
+            self.origin.z,
+            self.dim,
         );
         loop {
             match self.try_tessellate() {
@@ -988,6 +1288,7 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
 mod tests {
     use super::get_connected_edges_from_edge_set;
     use crate::bitset::BitSet;
+    use crate::ImplicitFunction;
     use nalgebra as na;
     //  Corner indexes
     //
@@ -1035,20 +1336,13 @@ mod tests {
     struct Sphere {
         center: na::Point3<f64>,
         radius: f64,
-        bbox: super::BoundingBox<f64, 3>,
     }
     impl Sphere {
         fn new(center: na::Point3<f64>, radius: f64) -> Self {
-            let r = radius + 0.1; // small padding
-            let bbox = super::BoundingBox::new(
-                &na::Point3::new(center.x - r, center.y - r, center.z - r),
-                &na::Point3::new(center.x + r, center.y + r, center.z + r),
-            );
-            Sphere { center, radius, bbox }
+            Sphere { center, radius }
         }
     }
     impl super::ImplicitFunction<f64> for Sphere {
-        fn bbox(&self) -> &super::BoundingBox<f64, 3> { &self.bbox }
         fn value(&self, p: &na::Point3<f64>) -> f64 {
             (p - self.center).norm() - self.radius
         }
@@ -1062,20 +1356,13 @@ mod tests {
     struct Torus {
         major: f64,
         minor: f64,
-        bbox: super::BoundingBox<f64, 3>,
     }
     impl Torus {
         fn new(major: f64, minor: f64) -> Self {
-            let r = major + minor + 0.1;
-            let bbox = super::BoundingBox::new(
-                &na::Point3::new(-r, -(minor + 0.1), -r),
-                &na::Point3::new( r,   minor + 0.1,   r),
-            );
-            Torus { major, minor, bbox }
+            Torus { major, minor }
         }
     }
     impl super::ImplicitFunction<f64> for Torus {
-        fn bbox(&self) -> &super::BoundingBox<f64, 3> { &self.bbox }
         fn value(&self, p: &na::Point3<f64>) -> f64 {
             let q = (p.x * p.x + p.z * p.z).sqrt();
             ((q - self.major).powi(2) + p.y * p.y).sqrt() - self.minor
@@ -1147,5 +1434,149 @@ mod tests {
         let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
         let mesh = mdc.tessellate().unwrap();
         Ok(mesh.is_closed()?)
+    }
+
+    // -------------------------------------------------------------------------
+    // Unit tests for bounding-box discovery helpers
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn find_hint_inside_returns_at_once() {
+        // Origin (+eps perturbation) is inside the unit sphere — no Newton steps needed.
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
+        let hint = super::find_hint(&sphere as &dyn super::ImplicitFunction<f64>, 0.2);
+        assert!(
+            sphere.value(&hint) < 0.0,
+            "hint {hint:?} should be inside the unit sphere (f={:.4})",
+            sphere.value(&hint),
+        );
+    }
+
+    #[test]
+    fn find_hint_outside_converges_inside() {
+        // Origin is well outside; gradient descent must drive us inside the sphere.
+        let sphere = Sphere::new(na::Point3::new(5.0, 3.0, -2.0), 1.0);
+        let hint = super::find_hint(&sphere as &dyn super::ImplicitFunction<f64>, 0.2);
+        assert!(
+            sphere.value(&hint) < 0.0,
+            "hint {hint:?} should be inside the offset sphere (f={:.4})",
+            sphere.value(&hint),
+        );
+    }
+
+    #[test]
+    fn find_hint_torus_avoids_degenerate_origin() {
+        // Origin lies on the torus's axis of symmetry where the normal is undefined.
+        // The eps-perturbation in find_hint must side-step this singularity.
+        let torus = Torus::new(1.0, 0.3);
+        let hint = super::find_hint(&torus as &dyn super::ImplicitFunction<f64>, 0.15);
+        assert!(
+            torus.value(&hint) < 0.0,
+            "hint {hint:?} should be inside the torus (f={:.4})",
+            torus.value(&hint),
+        );
+    }
+
+    #[test]
+    fn circles_triple_intersection_safe() {
+        // Equilateral triangle with side 1; radii 0.7.
+        // ra+rb = 1.4 > d = 1, so circles A and B overlap.
+        // Intersection points at x=0.5, y≈±0.49. C = (0.5, √3/2 ≈ 0.866).
+        // Distance from (0.5, 0.49) to C ≈ 0.376 < 0.7 → inside circle C → safe.
+        let a = na::Point3::new(0.0_f64, 0.0, 0.0);
+        let b = na::Point3::new(1.0, 0.0, 0.0);
+        let c = na::Point3::new(0.5, 3.0_f64.sqrt() / 2.0, 0.0);
+        assert!(super::circles_have_triple_intersection(a, 0.7, b, 0.7, c, 0.7));
+    }
+
+    #[test]
+    fn circles_triple_intersection_ab_no_overlap() {
+        // Same triangle but radii too small: ra+rb = 0.6 < d = 1, so circles A and B
+        // do not intersect at all → no triple intersection.
+        let a = na::Point3::new(0.0_f64, 0.0, 0.0);
+        let b = na::Point3::new(1.0, 0.0, 0.0);
+        let c = na::Point3::new(0.5, 3.0_f64.sqrt() / 2.0, 0.0);
+        assert!(!super::circles_have_triple_intersection(a, 0.3, b, 0.3, c, 0.3));
+    }
+
+    #[test]
+    fn circles_triple_intersection_ab_overlap_but_not_c() {
+        // A and B intersect (ra+rb=1.2>1), but C is far away — neither intersection
+        // point falls inside circle C.
+        let a = na::Point3::new(0.0_f64, 0.0, 0.0);
+        let b = na::Point3::new(1.0, 0.0, 0.0);
+        let c = na::Point3::new(10.0, 0.0, 0.0); // far away
+        assert!(!super::circles_have_triple_intersection(a, 0.6, b, 0.6, c, 0.6));
+    }
+
+    #[test]
+    fn check_triangle_corner_inside_object() {
+        // Corner c is inside the unit sphere (f = −0.5); must return Some(0.5).
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
+        let a = na::Point3::new(2.0_f64, 0.0, 0.0);
+        let b = na::Point3::new(0.0, 2.0, 0.0);
+        let c = na::Point3::new(0.0, 0.0, 0.5); // f = 0.5 − 1.0 = −0.5
+        let result = super::check_triangle(
+            &sphere as &dyn super::ImplicitFunction<f64>,
+            0.1,
+            a,
+            sphere.value(&a),
+            b,
+            sphere.value(&b),
+            c,
+            sphere.value(&c),
+        );
+        assert!(result.is_some(), "corner inside object must report unsafe");
+        assert!(
+            (result.unwrap() - 0.5).abs() < 1e-10,
+            "expand distance must equal |f(c)| = 0.5, got {:.6}",
+            result.unwrap(),
+        );
+    }
+
+    #[test]
+    fn check_triangle_far_from_surface() {
+        // Triangle with all corners far from the unit sphere; large SDF values mean
+        // the triple-circle test terminates the recursion immediately.
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
+        let a = na::Point3::new(10.0_f64, 0.0, 0.0); // f = 9.0
+        let b = na::Point3::new(10.0, 10.0, 0.0);    // f ≈ 13.1
+        let c = na::Point3::new(10.0, 0.0, 10.0);    // f ≈ 13.1
+        let result = super::check_triangle(
+            &sphere as &dyn super::ImplicitFunction<f64>,
+            0.1,
+            a,
+            sphere.value(&a),
+            b,
+            sphere.value(&b),
+            c,
+            sphere.value(&c),
+        );
+        assert!(result.is_none(), "triangle far from surface should be safe");
+    }
+
+    #[test]
+    fn find_bounds_sphere_at_origin() {
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
+        let bbox = super::find_bounds(&sphere as &dyn super::ImplicitFunction<f64>, 0.2);
+        assert!(bbox.min.x <= -1.0, "min.x = {:.3}", bbox.min.x);
+        assert!(bbox.min.y <= -1.0, "min.y = {:.3}", bbox.min.y);
+        assert!(bbox.min.z <= -1.0, "min.z = {:.3}", bbox.min.z);
+        assert!(bbox.max.x >= 1.0,  "max.x = {:.3}", bbox.max.x);
+        assert!(bbox.max.y >= 1.0,  "max.y = {:.3}", bbox.max.y);
+        assert!(bbox.max.z >= 1.0,  "max.z = {:.3}", bbox.max.z);
+    }
+
+    #[test]
+    fn find_bounds_sphere_offset() {
+        // Sphere at (5, 3, −2) radius 1; surface extents [4,6]×[2,4]×[−3,−1].
+        let sphere = Sphere::new(na::Point3::new(5.0, 3.0, -2.0), 1.0);
+        let bbox = super::find_bounds(&sphere as &dyn super::ImplicitFunction<f64>, 0.2);
+        assert!(bbox.min.x <= 4.0,  "min.x = {:.3}", bbox.min.x);
+        assert!(bbox.min.y <= 2.0,  "min.y = {:.3}", bbox.min.y);
+        assert!(bbox.min.z <= -3.0, "min.z = {:.3}", bbox.min.z);
+        assert!(bbox.max.x >= 6.0,  "max.x = {:.3}", bbox.max.x);
+        assert!(bbox.max.y >= 4.0,  "max.y = {:.3}", bbox.max.y);
+        assert!(bbox.max.z >= -1.0, "max.z = {:.3}", bbox.max.z);
     }
 }
