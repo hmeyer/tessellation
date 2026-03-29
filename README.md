@@ -32,6 +32,27 @@ let mut mdc = tessellation::ManifoldDualContouring::new(&sphere, 0.2, 0.1);
 let triangles = mdc.tessellate().unwrap();
 ```
 
+# Progress reporting
+
+For long-running tessellations (e.g. in a WebAssembly/WebWorker context) you can
+receive incremental progress via a callback:
+
+```rust
+mdc.tessellate_with_progress(|event| {
+    println!("{:.0}%  {:?}", event.progress_fraction() * 100.0, event);
+});
+```
+
+`ProgressEvent` covers nine pipeline stages — `BoundsFound`, `SamplingGrid`,
+`CompactingGrid`, `GeneratingEdges`, `GeneratingVerts`, `OctreeLayer`,
+`SolvingQef`, `GeneratingQuad`, and `Done` — each carrying a `done`/`total`
+pair or a `layer` counter.  `progress_fraction()` maps every event to a scalar
+in `[0, 1]` using per-stage weight heuristics, so values are monotonically
+non-decreasing and reach exactly `1.0` at `Done`.
+
+The callback runs on the same thread and requires no channels, atomics, or
+shared state, making it compatible with single-threaded WASM runtimes.
+
 # Algorithm
 
 The implementation follows [Manifold Dual Contouring](http://faculty.cs.tamu.edu/schaefer/research/dualsimp_tvcg.pdf) in roughly these steps:
@@ -40,7 +61,7 @@ The implementation follows [Manifold Dual Contouring](http://faculty.cs.tamu.edu
 
 2. **Compact value grid** — Drop all grid corners that have no sign-change neighbor. This reduces memory by ~10× while keeping all corners adjacent to the surface.
 
-3. **Generate edge grid** — For each grid edge whose two endpoints have opposite signs, binary-search for the exact zero crossing and record the surface position and normal as a tangent plane.
+3. **Generate edge grid** — For each grid edge whose two endpoints have opposite signs, find the exact zero crossing using a Newton-on-edge step (projecting the gradient onto the edge direction) with bisection fallback, and record the surface position and normal as a tangent plane.
 
 4. **Generate leaf vertices** — For each grid cell that contains at least one active edge, create one leaf vertex and accumulate the tangent planes from all crossing edges into a Quadratic Error Function (QEF).
 
