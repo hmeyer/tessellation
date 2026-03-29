@@ -390,24 +390,6 @@ fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Ve
     result
 }
 
-struct Timer {
-    t: std::time::Instant,
-}
-
-impl Timer {
-    fn new() -> Timer {
-        Timer {
-            t: std::time::Instant::now(),
-        }
-    }
-    fn elapsed(&mut self) -> std::time::Duration {
-        let now = std::time::Instant::now();
-        let result = now - self.t;
-        self.t = now;
-        result
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Bounding-box discovery
 // ---------------------------------------------------------------------------
@@ -708,6 +690,53 @@ fn find_bounds<S: Float + RealField + From<f32>>(
     bbox
 }
 
+/// Progress event emitted by [`ManifoldDualContouring::tessellate_with_progress`].
+#[derive(Clone, Debug)]
+#[allow(missing_docs)] // field names (done, total, layer, face_count) are self-documenting
+pub enum ProgressEvent {
+    /// Bounding box found; the sampling grid will now be built.
+    BoundsFound,
+    /// Sampling the value grid. `done` leaf cells inserted so far; `total` is the grid
+    /// volume (an overestimate — actual insertions are typically 5–15 % of this).
+    SamplingGrid    { done: usize, total: usize },
+    /// Compacting the value grid by removing cells with no sign-change neighbours.
+    CompactingGrid  { done: usize, total: usize },
+    /// Finding zero-crossings on grid edges.
+    GeneratingEdges { done: usize, total: usize },
+    /// Building leaf vertices from edge crossings.
+    GeneratingVerts { done: usize, total: usize },
+    /// One octree coarsening pass completed (`layer` = 0 is the leaf level).
+    OctreeLayer     { layer: usize },
+    /// Solving QEF systems for mesh vertices.
+    SolvingQef      { done: usize, total: usize },
+    /// Generating mesh quads from edge crossings.
+    GeneratingQuad  { done: usize, total: usize },
+    /// Tessellation complete; `face_count` triangles produced.
+    Done            { face_count: usize },
+}
+
+impl ProgressEvent {
+    /// Returns a scalar in `[0, 1]` estimating overall progress.
+    pub fn progress_fraction(&self) -> f32 {
+        fn interp(start: f32, end: f32, done: usize, total: usize) -> f32 {
+            let t = if total == 0 { 1.0 } else { (done as f32 / total as f32).min(1.0) };
+            start + (end - start) * t
+        }
+        match self {
+            Self::BoundsFound                        => 0.05,
+            Self::SamplingGrid    { done, total }    => interp(0.05, 0.55, *done, *total),
+            Self::CompactingGrid  { done, total }    => interp(0.55, 0.62, *done, *total),
+            Self::GeneratingEdges { done, total }    => interp(0.62, 0.67, *done, *total),
+            Self::GeneratingVerts { done, total }    => interp(0.67, 0.72, *done, *total),
+            Self::OctreeLayer     { layer }          =>
+                0.72 + 0.03 * (1.0 - 0.5_f32.powi(*layer as i32)),
+            Self::SolvingQef      { done, total }    => interp(0.75, 0.90, *done, *total),
+            Self::GeneratingQuad  { done, total }    => interp(0.90, 0.97, *done, *total),
+            Self::Done            { .. }             => 1.0,
+        }
+    }
+}
+
 impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, S> {
     /// Constructor
     /// f: function to tessellate
@@ -736,31 +765,29 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     }
     /// Tessellate the given function.
     pub fn tessellate(&mut self) -> Option<Mesh<S>> {
+        self.tessellate_with_progress(|_| {})
+    }
+
+    /// Tessellate, calling `progress` after each pipeline stage with a [`ProgressEvent`].
+    /// The callback is called from the same thread and may update UI or send messages.
+    pub fn tessellate_with_progress(&mut self, mut progress: impl FnMut(ProgressEvent)) -> Option<Mesh<S>> {
         let one: S = From::from(1f32);
         let mut bbox = find_bounds(self.function, self.res);
         bbox.dilate(one + self.res * From::from(1.1f32));
         self.origin = bbox.min;
         self.dim = std::array::from_fn(|i| Float::ceil(bbox.dim()[i] / self.res).as_usize());
-        println!(
-            "ManifoldDualContouring: res: {:} origin: ({:}, {:}, {:}) dim: {:?}",
-            self.res,
-            self.origin.x,
-            self.origin.y,
-            self.origin.z,
-            self.dim,
-        );
+        progress(ProgressEvent::BoundsFound);
         loop {
-            match self.try_tessellate() {
+            match self.try_tessellate(&mut progress) {
                 Ok(mesh) => return Some(mesh),
-                // Tessellation failed, b/c the value in one of the grid cells was exactly zero.
-                // Retry with some random padding and hope for the best.
-                Err(e) => {
+                // Tessellation failed because a grid cell value was exactly zero.
+                // Retry with random padding and hope for the best.
+                Err(_) => {
                     let padding = na::Vector3::new(
                         -self.res / From::from(10. + rand::random::<f32>().abs()),
                         -self.res / From::from(10. + rand::random::<f32>().abs()),
                         -self.res / From::from(10. + rand::random::<f32>().abs()),
                     );
-                    println!("Error: {:?}. moving by {:?} and retrying.", e, padding);
                     self.origin += padding;
                     self.value_grid.clear();
                     self.mesh.borrow_mut().vertices.clear();
@@ -772,87 +799,68 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
         }
     }
 
-    fn tessellation_step1(&mut self) -> Option<DualContouringError> {
+    fn tessellation_step1(&mut self, progress: &mut impl FnMut(ProgressEvent)) -> Option<DualContouringError> {
         let maxdim = cmp::max(self.dim[0], cmp::max(self.dim[1], self.dim[2]));
         let origin = self.origin;
         let origin_value = self.function.value(&origin);
-
-        self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value)
+        let total = self.dim[0] * self.dim[1] * self.dim[2];
+        let mut done = 0usize;
+        self.sample_value_grid([0, 0, 0], origin, pow2roundup(maxdim), origin_value, &mut done, total, progress)
     }
 
     // This method does the main work of tessellation.
     // It may fail, if the value in one of the grid cells yields exactly zero.
-    fn try_tessellate(&mut self) -> Result<Mesh<S>, DualContouringError> {
-        let mut t = Timer::new();
-        if let Some(e) = self.tessellation_step1() {
+    fn try_tessellate(&mut self, progress: &mut impl FnMut(ProgressEvent)) -> Result<Mesh<S>, DualContouringError> {
+        if let Some(e) = self.tessellation_step1(progress) {
             return Err(e);
         }
-        let total_cells = self.dim[0] * self.dim[1] * self.dim[2];
-        println!(
-            "generated value_grid with {:} % of {:} cells in {:?}.",
-            (100 * self.value_grid.len()) as f64 / total_cells as f64,
-            total_cells,
-            t.elapsed()
-        );
 
+        let compact_total = self.value_grid.len();
+        progress(ProgressEvent::CompactingGrid { done: 0, total: compact_total });
         self.compact_value_grid();
-        println!(
-            "compacted value_grid, now {:} % of {:} cells in {:?}.",
-            (100 * self.value_grid.len()) as f64 / total_cells as f64,
-            total_cells,
-            t.elapsed()
-        );
+        progress(ProgressEvent::CompactingGrid { done: compact_total, total: compact_total });
 
-        self.generate_edge_grid();
+        self.generate_edge_grid(progress);
 
-        println!(
-            "generated edge_grid with {} edges: {:?}",
-            self.edge_grid.borrow().len(),
-            t.elapsed()
-        );
-
-        let (leafs, index_map) = self.generate_leaf_vertices();
+        let (leafs, index_map) = self.generate_leaf_vertices(progress);
         self.vertex_index_map = index_map;
         self.vertex_octtree.push(leafs);
 
-        println!(
-            "generated {:?} leaf vertices: {:?}",
-            self.vertex_octtree[0].len(),
-            t.elapsed()
-        );
-
+        let mut layer = 0usize;
         loop {
+            progress(ProgressEvent::OctreeLayer { layer });
             let next = subsample_octtree(self.vertex_octtree.last().unwrap());
             if next.len() == self.vertex_octtree.last().unwrap().len() {
                 break;
             }
             self.vertex_octtree.push(next);
+            layer += 1;
         }
-        println!("subsampled octtree {:?}", t.elapsed());
 
-        let num_qefs_solved = self.solve_qefs();
+        self.solve_qefs(progress);
 
-        println!("solved {} qefs: {:?}", num_qefs_solved, t.elapsed());
-
-        for edge_index in self.edge_grid.borrow().keys() {
-            self.compute_quad(*edge_index);
+        let total_quads = self.edge_grid.borrow().len();
+        for (i, &edge_index) in self.edge_grid.borrow().keys().enumerate() {
+            progress(ProgressEvent::GeneratingQuad { done: i + 1, total: total_quads });
+            self.compute_quad(edge_index);
         }
-        println!("generated quads: {:?}", t.elapsed());
 
-        println!(
-            "computed mesh with {:?} faces.",
-            self.mesh.borrow().faces.len()
-        );
+        let face_count = self.mesh.borrow().faces.len();
+        progress(ProgressEvent::Done { face_count });
 
         Ok(self.mesh.borrow().clone())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn sample_value_grid(
         &mut self,
         idx: Index,
         pos: na::Point3<S>,
         size: usize,
         val: S,
+        done: &mut usize,
+        total: usize,
+        progress: &mut impl FnMut(ProgressEvent),
     ) -> Option<DualContouringError> {
         debug_assert!(size > 1);
         let mut midx = idx;
@@ -879,11 +887,13 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
                     }
 
                     if size > 1 && Float::abs(value) <= sub_cube_diagonal {
-                        if let Some(e) = self.sample_value_grid(midx, mpos, size, value) {
+                        if let Some(e) = self.sample_value_grid(midx, mpos, size, value, done, total, progress) {
                             return Some(e);
                         }
                     } else {
                         self.value_grid.insert(midx, value);
+                        *done += 1;
+                        progress(ProgressEvent::SamplingGrid { done: *done, total });
                     }
                     midx[0] += size;
                 }
@@ -933,9 +943,11 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     }
 
     // Store crossing positions of edges in edge_grid
-    fn generate_edge_grid(&mut self) {
+    fn generate_edge_grid(&mut self, progress: &mut impl FnMut(ProgressEvent)) {
+        let total = self.value_grid.len();
         let mut edge_grid = self.edge_grid.borrow_mut();
-        for (&point_idx, &point_value) in &self.value_grid {
+        for (done, (&point_idx, &point_value)) in self.value_grid.iter().enumerate() {
+            progress(ProgressEvent::GeneratingEdges { done: done + 1, total });
             for &edge in &[Edge::A, Edge::B, Edge::C] {
                 let mut adjacent_idx = point_idx;
                 adjacent_idx[edge as usize] += 1;
@@ -966,15 +978,14 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
 
     // Solves QEFs in vertex stack, starting at the highest level, down all layers until the qef
     // error is below threshold.
-    // Returns the number of solved QEFs.
-    fn solve_qefs(&self) -> usize {
-        let mut num_solved = 0;
+    fn solve_qefs(&self, progress: &mut impl FnMut(ProgressEvent)) {
         if let Some(top_layer) = self.vertex_octtree.last() {
-            for i in 0..top_layer.len() {
-                num_solved += self.recursively_solve_qefs(&self.vertex_octtree.len() - 1, i);
+            let total = top_layer.len();
+            for i in 0..total {
+                progress(ProgressEvent::SolvingQef { done: i + 1, total });
+                self.recursively_solve_qefs(&self.vertex_octtree.len() - 1, i);
             }
         }
-        num_solved
     }
 
     fn recursively_solve_qefs(&self, layer: usize, index_in_layer: usize) -> usize {
@@ -1008,10 +1019,13 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
 
     // Generates leaf vertices along with a map that points VertexIndices to the index in the leaf
     // vertex vec.
-    fn generate_leaf_vertices(&self) -> (Vec<Vertex<S>>, HashMap<VertexIndex, usize>) {
+    fn generate_leaf_vertices(&self, progress: &mut impl FnMut(ProgressEvent)) -> (Vec<Vertex<S>>, HashMap<VertexIndex, usize>) {
         let mut index_map = HashMap::new();
         let mut vertices = Vec::new();
-        for edge_index in self.edge_grid.borrow().keys() {
+        let edge_keys: Vec<EdgeIndex> = self.edge_grid.borrow().keys().copied().collect();
+        let total = edge_keys.len();
+        for (i, edge_index) in edge_keys.iter().enumerate() {
+            progress(ProgressEvent::GeneratingVerts { done: i + 1, total });
             self.add_vertices_for_minimal_egde(edge_index, &mut vertices, &mut index_map);
         }
         for vertex in &mut vertices {
@@ -1612,5 +1626,59 @@ mod tests {
         assert!(bbox.max.x >= 6.0,  "max.x = {:.3}", bbox.max.x);
         assert!(bbox.max.y >= 4.0,  "max.y = {:.3}", bbox.max.y);
         assert!(bbox.max.z >= -1.0, "max.z = {:.3}", bbox.max.z);
+    }
+
+    // -------------------------------------------------------------------------
+    // ProgressEvent tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn progress_fraction_values_and_order() {
+        use super::ProgressEvent;
+        let events: &[ProgressEvent] = &[
+            ProgressEvent::BoundsFound,
+            ProgressEvent::SamplingGrid    { done: 0,   total: 100 },
+            ProgressEvent::SamplingGrid    { done: 50,  total: 100 },
+            ProgressEvent::SamplingGrid    { done: 100, total: 100 },
+            ProgressEvent::CompactingGrid  { done: 0,   total: 100 },
+            ProgressEvent::CompactingGrid  { done: 100, total: 100 },
+            ProgressEvent::GeneratingEdges { done: 0,   total: 100 },
+            ProgressEvent::GeneratingEdges { done: 100, total: 100 },
+            ProgressEvent::GeneratingVerts { done: 0,   total: 100 },
+            ProgressEvent::GeneratingVerts { done: 100, total: 100 },
+            ProgressEvent::OctreeLayer     { layer: 0 },
+            ProgressEvent::OctreeLayer     { layer: 1 },
+            ProgressEvent::OctreeLayer     { layer: 10 },
+            ProgressEvent::SolvingQef      { done: 0,   total: 100 },
+            ProgressEvent::SolvingQef      { done: 100, total: 100 },
+            ProgressEvent::GeneratingQuad  { done: 0,   total: 100 },
+            ProgressEvent::GeneratingQuad  { done: 100, total: 100 },
+            ProgressEvent::Done            { face_count: 42 },
+        ];
+        let mut prev = 0.0f32;
+        for e in events {
+            let f = e.progress_fraction();
+            assert!(f >= prev, "{e:?} fraction {f} < previous {prev}");
+            assert!(f <= 1.0,  "{e:?} fraction {f} > 1.0");
+            prev = f;
+        }
+        assert_eq!(ProgressEvent::Done { face_count: 0 }.progress_fraction(), 1.0);
+    }
+
+    #[test]
+    fn progress_monotonic_and_ends_at_one() {
+        let sphere = Sphere::new(na::Point3::origin(), 1.0);
+        let mut mdc = super::ManifoldDualContouring::new(&sphere, 0.4, 0.0);
+        let mut fractions: Vec<f32> = Vec::new();
+        mdc.tessellate_with_progress(|e| fractions.push(e.progress_fraction()));
+        assert!(!fractions.is_empty(), "no progress events emitted");
+        for i in 1..fractions.len() {
+            assert!(
+                fractions[i] >= fractions[i - 1],
+                "non-monotonic: fractions[{}]={} < fractions[{}]={}",
+                i, fractions[i], i - 1, fractions[i - 1]
+            );
+        }
+        assert_eq!(fractions.last().copied(), Some(1.0), "last event should be Done (1.0)");
     }
 }

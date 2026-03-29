@@ -38,6 +38,7 @@ mod qef;
 mod vertex_index;
 
 pub use self::manifold_dual_contouring::ManifoldDualContouring;
+pub use self::manifold_dual_contouring::ProgressEvent;
 pub use self::mesh::Mesh;
 
 /// Trait alias for nalgebra's RealField.
