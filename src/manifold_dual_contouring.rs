@@ -799,7 +799,7 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
         }
     }
 
-    fn tessellation_step1(&mut self, progress: &mut impl FnMut(ProgressEvent)) -> Option<DualContouringError> {
+    fn build_value_grid(&mut self, progress: &mut impl FnMut(ProgressEvent)) -> Option<DualContouringError> {
         let maxdim = cmp::max(self.dim[0], cmp::max(self.dim[1], self.dim[2]));
         let origin = self.origin;
         let origin_value = self.function.value(&origin);
@@ -811,7 +811,7 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     // This method does the main work of tessellation.
     // It may fail, if the value in one of the grid cells yields exactly zero.
     fn try_tessellate(&mut self, progress: &mut impl FnMut(ProgressEvent)) -> Result<Mesh<S>, DualContouringError> {
-        if let Some(e) = self.tessellation_step1(progress) {
+        if let Some(e) = self.build_value_grid(progress) {
             return Err(e);
         }
 
