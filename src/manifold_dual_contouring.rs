@@ -337,7 +337,7 @@ fn subsample_euler_characteristics<S: RealField>(
 fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Vec<Vertex<S>> {
     let mut result = Vec::new();
     for (i, vertex) in base.iter().enumerate() {
-        if vertex.parent.get() == None {
+        if vertex.parent.get().is_none() {
             let mut neighbor_set = BTreeSet::new();
             neighbor_set.insert(i);
             add_connected_vertices_in_subcell(base, vertex, &mut neighbor_set);
@@ -362,7 +362,7 @@ fn subsample_octtree<S: RealField + Float + From<f32>>(base: &[Vertex<S>]) -> Ve
             for &neighbor_index in &neighbor_set {
                 let child = &base[neighbor_index];
                 debug_assert!(
-                    child.parent.get() == None,
+                    child.parent.get().is_none(),
                     "child #{:?} already has parent #{:?}",
                     neighbor_index,
                     child.parent.get().unwrap()
@@ -514,6 +514,7 @@ fn circles_have_triple_intersection<S: Float + RealField + From<f32>>(
 // Checks whether the zero surface can exit through triangle A-B-C.
 // Returns None if the triangle is safe, or Some(d) where d is the distance the
 // containing face must be shifted outward to clear the surface.
+#[allow(clippy::too_many_arguments)]
 fn check_triangle<S: Float + RealField + From<f32>>(
     f: &dyn ImplicitFunction<S>,
     res: S,
@@ -912,12 +913,11 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
                     for y in 0..3 {
                         for x in 0..3 {
                             let adjacent_idx = [idx[0] + x - 1, idx[1] + y - 1, idx[2] + z - 1];
-                            if let Some(&adjacent_value) = value_grid.get(&adjacent_idx) {
-                                if Float::signum(v) != Float::signum(adjacent_value) {
-                                    // Don't collect indexes with
-                                    // opposing signum.
-                                    return false;
-                                }
+                            if let Some(&adjacent_value) = value_grid.get(&adjacent_idx)
+                                && Float::signum(v) != Float::signum(adjacent_value)
+                            {
+                                // Don't collect indexes with opposing signum.
+                                return false;
                             }
                         }
                     }
@@ -1127,8 +1127,8 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
     }
 
     fn get_edge_tangent_plane(&self, edge_index: &EdgeIndex) -> Plane<S> {
-        if let Some(ref plane) = self.edge_grid.borrow().get(&edge_index.base()) {
-            return **plane;
+        if let Some(plane) = self.edge_grid.borrow().get(&edge_index.base()) {
+            return *plane;
         }
         panic!(
             "could not find edge_point: {:?} -> {:?}",
@@ -1232,10 +1232,10 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
             return;
         }
         // Reverse order, if the edge is reversed.
-        if let Some(&v) = self.value_grid.get(&edge_index.index) {
-            if v < From::from(0f32) {
-                p.reverse();
-            }
+        if let Some(&v) = self.value_grid.get(&edge_index.index)
+            && v < From::from(0f32)
+        {
+            p.reverse();
         }
         let face_list = &mut self.mesh.borrow_mut().faces;
         // TODO: Fix this to choose the proper split.

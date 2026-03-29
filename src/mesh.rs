@@ -1,20 +1,25 @@
 use nalgebra as na;
 use nalgebra::RealField;
+#[cfg(test)]
 use std::error::Error;
+#[cfg(test)]
 use std::fmt;
 use std::fmt::Debug;
 
+#[cfg(test)]
 #[derive(Debug, PartialEq)]
 pub struct MeshError {
     msg: String,
 }
 
+#[cfg(test)]
 impl fmt::Display for MeshError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "MeshError {}", self.msg)
     }
 }
 
+#[cfg(test)]
 impl Error for MeshError {}
 
 /// Mesh that will be returned from tessellate.
