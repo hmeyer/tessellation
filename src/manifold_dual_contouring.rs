@@ -1253,34 +1253,68 @@ impl<'a, S: From<f32> + RealField + Float + AsUSize> ManifoldDualContouring<'a, 
         if Float::signum(av) == Float::signum(bv) {
             return None;
         }
-        let d = a - b;
-        let mut distance = Float::max(
-            Float::max(Float::abs(d.x), Float::abs(d.y)),
-            Float::abs(d.z),
-        );
-        distance = Float::min(Float::min(distance, Float::abs(av)), Float::abs(bv));
-        let precision: S = From::from(PRECISION);
-        if distance < precision * self.res {
-            let result = if Float::abs(bv) < Float::abs(av) {
-                &b
-            } else {
-                &a
-            };
-            return Some(Plane {
-                p: *result,
-                // We need a precise normal here.
-                n: self.function.normal(result),
-            });
-        }
-        // Linear interpolation of the zero crossing.
-        let n = a + (b - a) * (Float::abs(av) / Float::abs(bv - av));
-        let nv = self.function.value(&n);
 
-        if Float::signum(av) != Float::signum(nv) {
-            self.find_zero(a, av, n, nv)
-        } else {
-            self.find_zero(n, nv, b, bv)
+        let d = b - a; // edge vector; all movement stays on this line
+        let d_norm = d.norm();
+        let prec: S = From::from(PRECISION);
+        let precision = prec * self.res;
+        let zero: S = From::from(0f32);
+        let one: S = From::from(1f32);
+        let half: S = From::from(0.5f32);
+        let eps: S = From::from(1e-3f32);
+
+        // Bracket invariant: lo_v <= 0 <= hi_v throughout.
+        let (mut lo, mut lo_v, mut hi, mut hi_v) =
+            if av <= zero { (a, av, b, bv) } else { (b, bv, a, av) };
+
+        // Each bisection step halves the bracket. Adjacent grid corners are
+        // distance res apart, so log2(1/PRECISION) ≈ 5 bisections suffice.
+        // 64 is a generous safety cap that should never be reached in practice.
+        for _ in 0..64 {
+            // Work from the bracket endpoint closer to zero.
+            let (p, pv) = if Float::abs(lo_v) <= Float::abs(hi_v) {
+                (lo, lo_v)
+            } else {
+                (hi, hi_v)
+            };
+
+            if Float::abs(pv) < precision || (hi - lo).norm() < precision {
+                return Some(Plane { p, n: self.function.normal(&p) });
+            }
+
+            // Newton step along the edge: p_new = p - f(p)/(normal(p)·d) * d.
+            // Fall back to bisection if the projected gradient is too small
+            // (surface nearly tangent to edge) or if Newton escapes the bracket.
+            let grad = self.function.normal(&p).dot(&d);
+            let bracket = hi - lo;
+            let mid = lo + bracket * half;
+            let p_new = if Float::abs(grad) > eps * d_norm {
+                let candidate = p + d * (-pv / grad);
+                let t = (candidate - lo).dot(&bracket) / bracket.norm_squared();
+                if t > zero && t < one { candidate } else { mid }
+            } else {
+                mid
+            };
+
+            let new_v = self.function.value(&p_new);
+
+            // Update bracket, maintaining lo_v <= 0 <= hi_v.
+            if new_v <= zero {
+                lo = p_new;
+                lo_v = new_v;
+            } else {
+                hi = p_new;
+                hi_v = new_v;
+            }
+            debug_assert!(
+                lo_v <= zero && hi_v >= zero,
+                "find_zero: bracket invariant violated: lo_v={lo_v:?} hi_v={hi_v:?}"
+            );
         }
+
+        // Max iterations reached; return the closer endpoint.
+        let p = if Float::abs(lo_v) <= Float::abs(hi_v) { lo } else { hi };
+        Some(Plane { p, n: self.function.normal(&p) })
     }
 }
 
